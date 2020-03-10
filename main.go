@@ -13,6 +13,7 @@ func main() {
 	e := echo.New()
 	e.GET("/", handle)
 	e.GET("/:name", handle)
+	e.Static("/static", "static")
 	e.Logger.Fatal(e.Start(":8080"))
 }
 
@@ -33,7 +34,13 @@ func handle(c echo.Context) error {
 		return c.String(http.StatusNotFound, "File not found:" + filename)
 	}
 
-	output := blackfriday.Run(bytes)
+	params := blackfriday.HTMLRendererParameters{
+		CSS: "static/main.css",
+		Flags: blackfriday.CompletePage,
+	}
+	renderer := blackfriday.NewHTMLRenderer(params)
+
+	output := blackfriday.Run(bytes, blackfriday.WithRenderer((renderer)))
 
 	c.Response().Header().Add("Content-Type", "text/html; charset=UTF-8")
 	return c.String(http.StatusOK, string(output))
