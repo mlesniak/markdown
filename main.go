@@ -1,10 +1,12 @@
 package main
 
 import (
+	"io/ioutil"
 	"net/http"
 	"strings"
 
 	"github.com/labstack/echo/v4"
+	"github.com/russross/blackfriday/v2"
 )
 
 func main() {
@@ -25,5 +27,14 @@ func handle(c echo.Context) error {
 	// Markdown target name.
 	filename = strings.Replace(filename, ".html", ".md", 1)
 
-	return c.String(http.StatusOK, filename)
+	// Convert from markdown to html.
+	bytes, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return c.String(http.StatusNotFound, "File not found:" + filename)
+	}
+
+	output := blackfriday.Run(bytes)
+
+	c.Response().Header().Add("Content-Type", "text/html; charset=UTF-8")
+	return c.String(http.StatusOK, string(output))
 }
