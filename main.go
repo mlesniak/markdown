@@ -31,11 +31,11 @@ func handle(c echo.Context) error {
 	// Convert from markdown to html.
 	bytes, err := ioutil.ReadFile(filename)
 	if err != nil {
-		return c.String(http.StatusNotFound, "File not found:" + filename)
+		return c.String(http.StatusNotFound, "File not found:"+filename)
 	}
 
 	params := blackfriday.HTMLRendererParameters{
-		CSS: "static/main.css",
+		CSS:   "static/main.css",
 		Flags: blackfriday.CompletePage,
 	}
 	renderer := blackfriday.NewHTMLRenderer(params)
