@@ -1,5 +1,5 @@
 body {
-    max-width: 800px;
+    max-width: 960px;
     /* max-width: 100%; */
     margin: auto;
     line-height: 1.5em;
@@ -7,9 +7,13 @@ body {
     border-left: 1px solid #eee;
     margin-top: 2em;
     padding-left: 2em;
-    border-right: 1px solid #eee;
+    /* border-right: 1px solid #eee; */
     padding-right: 2em;
     font-family: sans-serif, "Helvetica", "Arial", sans-serif;
+}
+
+hr {
+    border-top: 1px solid#eee;
 }
 
 h1,
