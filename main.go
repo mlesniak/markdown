@@ -25,10 +25,10 @@ func handle(c echo.Context) error {
 		filename = "index.html"
 	}
 
-	// If a html file with this name exists, simply deliver it.
+	// If a file with this name exists, simply deliver it.
 	bytes, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return c.String(http.StatusOK, string(bytes))
+	if err == nil {
+		return c.File(filename)
 	}
 
 	// Markdown target name.
