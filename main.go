@@ -33,6 +33,10 @@ func handle(c echo.Context) error {
 	}
 
 	// Markdown target name.
+	// If file does not end with .html, append it.
+	if !strings.HasSuffix(filename, ".html") {
+		filename = filename + ".html"
+	}
 	filename = strings.Replace(filename, ".html", ".md", 1)
 
 	// Convert from markdown to html.

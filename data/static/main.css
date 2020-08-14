@@ -1,11 +1,10 @@
 body {
     max-width: 960px;
     /* max-width: 100%; */
-    margin: auto;
     line-height: 1.5em;
     color: #555;
-    border-left: 1px solid #eee;
-    margin-top: 2em;
+    /*border-left: 1px solid #eee;*/
+    margin: 2em auto auto;
     padding-left: 2em;
     /* border-right: 1px solid #eee; */
     padding-right: 2em;
@@ -20,15 +19,9 @@ h1,
 h2,
 strong {
     color: #333;
-    margin-top: 0px;
+    margin-top: 0;
 }
 
-
-/* Table of Contents, if wanted, add to yaml:
-output:
-blogdown::html_page:
-toc: true
-*/
 
 #TableOfContents,
 #TOC {
@@ -191,4 +184,8 @@ header li a {
 
 .contacts *>li {
     list-style-type: none;
+}
+
+li {
+    list-style-type: square;
 }
