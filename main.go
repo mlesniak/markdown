@@ -19,6 +19,7 @@ func main() {
 
 func handle(c echo.Context) error {
 	filename := c.Param("name")
+	println("request for " + filename)
 
 	// Default handler for root element.
 	if filename == "" {

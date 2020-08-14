@@ -14,11 +14,12 @@ Write this...
 
 ## Run on server
 
+    docker pull 116.203.24.33:5000/markdown:latest
     docker run -d --name markdown -it -p 8088:8080 -v $(pwd)/data:/data 116.203.24.33:5000/markdown:latest
 
 ## Submit content
 
-    scp -r data/* server:data/
+    ./publish.sh
 
 ## Things todo
 
