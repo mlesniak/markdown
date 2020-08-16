@@ -1,6 +1,6 @@
 # Digital garden
 
-This website follows the latest movement of _digital gardens_ and this site is my personal part of the Web. Joel Hooks [said](https://joelhooks.com/digital-garden), that the phrase
+This website follows the latest movement of [_digital gardens_](https://www.google.com/search?q=digital+garden+blog) and this site is my personal part of the Web. Joel Hooks [said](https://joelhooks.com/digital-garden), that the phrase
 
 > "digital garden" is a metaphor for thinking about writing and creating that focuses less on the resulting "showpiece" and more on the process, care, and craft it takes to get there.
 
