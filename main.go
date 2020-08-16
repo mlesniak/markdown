@@ -48,6 +48,7 @@ func handle(c echo.Context) error {
 	params := blackfriday.HTMLRendererParameters{
 		CSS: "static/main.css",
 		Flags: blackfriday.CompletePage |
+			// TODO Won't work like this
 			blackfriday.SmartypantsQuotesNBSP |
 			blackfriday.SmartypantsDashes |
 			blackfriday.SmartypantsLatexDashes,
@@ -67,3 +68,6 @@ func handle(c echo.Context) error {
 	c.Response().Header().Add("Content-Type", "text/html; charset=UTF-8")
 	return c.String(http.StatusOK, outstr)
 }
+
+// TODO Collect referer
+// TODO Allow own html template
