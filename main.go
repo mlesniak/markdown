@@ -47,11 +47,11 @@ func handle(c echo.Context) error {
 
 	params := blackfriday.HTMLRendererParameters{
 		CSS:   "static/main.css",
-		Flags: blackfriday.CompletePage,
+		Flags: blackfriday.CompletePage | blackfriday.SmartypantsQuotesNBSP | blackfriday.SmartypantsDashes,
 	}
 	renderer := blackfriday.NewHTMLRenderer(params)
 
-	output := blackfriday.Run(bytes, blackfriday.WithRenderer((renderer)))
+	output := blackfriday.Run(bytes, blackfriday.WithRenderer(renderer))
 
 	c.Response().Header().Add("Content-Type", "text/html; charset=UTF-8")
 	return c.String(http.StatusOK, string(output))
