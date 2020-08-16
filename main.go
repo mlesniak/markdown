@@ -21,6 +21,9 @@ func main() {
 }
 
 func handle(c echo.Context) error {
+	referer := c.Request().Header.Get("Referer")
+	println("referer: " + referer)
+
 	filename := c.Param("name")
 	println("request for " + filename)
 
@@ -60,9 +63,12 @@ func handle(c echo.Context) error {
 		var b strings.Builder
 		b.WriteString("<h1>List of all articles</h1>\n\n")
 
-		names := make([]string, len(dirs))
+		names := make([]string, 0)
 		for _, v := range dirs {
 			if v.IsDir() {
+				continue
+			}
+			if !strings.HasSuffix(v.Name(), ".md") {
 				continue
 			}
 			names = append(names, v.Name())
@@ -115,6 +121,3 @@ func handle(c echo.Context) error {
 
 	return c.String(http.StatusOK, outstr)
 }
-
-// TODO Collect referer
-// TODO TOC
