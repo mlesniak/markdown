@@ -12,3 +12,5 @@ require (
 	golang.org/x/net v0.0.0-20200301022130-244492dfa37a // indirect
 	golang.org/x/sys v0.0.0-20200302150141-5c8b2ff67527 // indirect
 )
+
+// replace github.com/russross/blackfriday/v2 => github.com/mlesniak/blackfriday/v2 v2.0.1

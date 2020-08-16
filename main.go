@@ -53,6 +53,14 @@ func handle(c echo.Context) error {
 
 	output := blackfriday.Run(bytes, blackfriday.WithRenderer(renderer))
 
+	outstr := string(output)
+
+	// Add meta directive for better mobile rendering.
+	// We should add a patch to blackfriday to inject it as part of complete-page-rendering.
+	outstr = strings.ReplaceAll(outstr,
+		`<meta charset="utf-8">`,
+		`<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1" />`)
+
 	c.Response().Header().Add("Content-Type", "text/html; charset=UTF-8")
-	return c.String(http.StatusOK, string(output))
+	return c.String(http.StatusOK, outstr)
 }
