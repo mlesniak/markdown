@@ -1,6 +1,6 @@
 # Overview
 
-This is a custom hacked-together markdown-to-html server for [mlesniak.com](https://mlesniak.com). The code is hacky and ugly and needs a lot of refactoring.
+This is a custom hacked-together markdown-to-html server for [mlesniak.com](https://mlesniak.com). The code is hacky and ugly and needs a lot of refactoring. But it works...
 
 ## Build and run locally
 
