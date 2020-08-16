@@ -1,9 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/labstack/echo/v4"
@@ -27,10 +29,14 @@ func handle(c echo.Context) error {
 		filename = "index.html"
 	}
 
+	var bs []byte
+
 	// If a file with this name exists, simply deliver it.
-	bytes, err := ioutil.ReadFile(filename)
-	if err == nil {
-		return c.File(filename)
+	if !strings.HasSuffix(filename, ".md") {
+		_, err := ioutil.ReadFile(filename)
+		if err == nil {
+			return c.File(filename)
+		}
 	}
 
 	// Markdown target name.
@@ -41,11 +47,47 @@ func handle(c echo.Context) error {
 	filename = strings.Replace(filename, ".html", ".md", 1)
 
 	// Special case handler for ToC.
-	if filename == "toc.html" {
+	if filename == "toc.md" {
+		ignored := make(map[string]bool)
+		ignored["template.html"] = true
+		ignored["smashup.html"] = true
 
+		// Generate markdown linked list
+		dirs, err := ioutil.ReadDir(".")
+		if err != nil {
+			return c.String(http.StatusNotFound, "TOC not found:"+filename)
+		}
+		var b strings.Builder
+		b.WriteString("<h1>List of all articles</h1>\n\n")
+		// TODO Sort by name?
+
+		names := make([]string, len(dirs))
+		for _, v := range dirs {
+			if v.IsDir() {
+				continue
+			}
+			names = append(names, v.Name())
+		}
+		sort.Strings(names)
+
+		for _, name := range names {
+			if _, found := ignored[name]; found {
+				continue
+			}
+			href := strings.ReplaceAll(name, ".md", ".html")
+			tbs, err := ioutil.ReadFile(name)
+			if err != nil {
+				println("Unable to read file for title:" + name)
+				continue
+			}
+			title := strings.Trim(strings.Split(string(tbs), "\n")[0][1:], " ")
+			b.WriteString(fmt.Sprintf("- [%v](%v)\n", title, href))
+		}
+		bs = []byte(b.String())
 	} else {
 		// Convert from markdown to html.
-		bytes, err = ioutil.ReadFile(filename)
+		xs, err := ioutil.ReadFile(filename)
+		bs = xs
 		if err != nil {
 			return c.String(http.StatusNotFound, "File not found:"+filename)
 		}
@@ -53,23 +95,10 @@ func handle(c echo.Context) error {
 
 	params := blackfriday.HTMLRendererParameters{
 		CSS: "static/main.css",
-		Flags: // blackfriday.CompletePage |
-		// TODO Won't work like this
-		blackfriday.SmartypantsQuotesNBSP |
-			blackfriday.SmartypantsDashes |
-			blackfriday.SmartypantsLatexDashes,
 	}
 	renderer := blackfriday.NewHTMLRenderer(params)
-
-	output := blackfriday.Run(bytes, blackfriday.WithRenderer(renderer))
-
+	output := blackfriday.Run(bs, blackfriday.WithRenderer(renderer))
 	outstr := string(output)
-
-	// Add meta directive for better mobile rendering.
-	// We should add a patch to blackfriday to inject it as part of complete-page-rendering.
-	// outstr = strings.ReplaceAll(outstr,
-	// 	`<meta charset="utf-8">`,
-	// 	`<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1" />`)
 
 	c.Response().Header().Add("Content-Type", "text/html; charset=UTF-8")
 
@@ -78,7 +107,7 @@ func handle(c echo.Context) error {
 		return c.String(http.StatusNotFound, "Template not found:"+filename)
 	}
 	outstr = strings.ReplaceAll(string(btempl), "${content}", outstr)
-	regex, err := regexp.Compile("<h1>(.*)</h1>")
+	regex, err := regexp.Compile(`<h1>(.*)</h1>`)
 	if err != nil {
 		panic(err)
 	}

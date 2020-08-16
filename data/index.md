@@ -1,4 +1,4 @@
-# Welcome
+# AWelcome
 
 This is the [digital garden](garden) of Dr. Michael Lesniak -- a place where I curate, collect and present my thoughts, short code snippets, links, (un)finished ideas, concepts and interesting musings.
 
@@ -8,3 +8,5 @@ You can contact me by [mail](mailto:mail@mlesniak.com) or [Twitter](https://twit
 - [Xing](https://www.xing.com/profile/Michael_Lesniak/cv)
 - [Linkedin](https://www.linkedin.com/in/dr-michael-lesniak-1577a315/)
 - [GitHub statistics](https://coderstats.net/github/#mlesniak)
+
+An unsorted list of all articles can be found [here](toc).
