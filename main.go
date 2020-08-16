@@ -46,8 +46,11 @@ func handle(c echo.Context) error {
 	}
 
 	params := blackfriday.HTMLRendererParameters{
-		CSS:   "static/main.css",
-		Flags: blackfriday.CompletePage | blackfriday.SmartypantsQuotesNBSP | blackfriday.SmartypantsDashes,
+		CSS: "static/main.css",
+		Flags: blackfriday.CompletePage |
+			blackfriday.SmartypantsQuotesNBSP |
+			blackfriday.SmartypantsDashes |
+			blackfriday.SmartypantsLatexDashes,
 	}
 	renderer := blackfriday.NewHTMLRenderer(params)
 
