@@ -1,4 +1,4 @@
-# AWelcome
+# Hello, world!
 
 This is the [digital garden](garden) of Dr. Michael Lesniak -- a place where I curate, collect and present my thoughts, short code snippets, links, (un)finished ideas, concepts and interesting musings.
 

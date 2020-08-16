@@ -59,7 +59,6 @@ func handle(c echo.Context) error {
 		}
 		var b strings.Builder
 		b.WriteString("<h1>List of all articles</h1>\n\n")
-		// TODO Sort by name?
 
 		names := make([]string, len(dirs))
 		for _, v := range dirs {
