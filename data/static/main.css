@@ -1,5 +1,5 @@
 body {
-    max-width: 960px;
+    max-width: 900px;
     /* max-width: 100%; */
     line-height: 1.5em;
     color: #555;
@@ -9,10 +9,13 @@ body {
     /* border-right: 1px solid #eee; */
     padding-right: 2em;
     font-family: sans-serif, "Helvetica", "Arial", sans-serif;
+    font-size: 1.2em;
+    text-align: justify;
+    color: #333333;
 }
 
 hr {
-    border-top: 1px solid#eee;
+    border-top: 1px solid #eee;
 }
 
 h1,
@@ -154,7 +157,7 @@ header li a {
     color: #009900;
 }
 
-.content *>li {
+.content * > li {
     list-style-type: square;
 }
 
@@ -163,7 +166,7 @@ header li a {
     margin-top: -10px;
 }
 
-.articles>li {
+.articles > li {
     list-style-type: none;
 }
 
@@ -182,7 +185,7 @@ header li a {
     line-height: 1.5em;
 }
 
-.contacts *>li {
+.contacts * > li {
     list-style-type: none;
 }
 
