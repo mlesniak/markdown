@@ -3,6 +3,7 @@ package main
 import (
 	"io/ioutil"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/labstack/echo/v4"
@@ -39,17 +40,22 @@ func handle(c echo.Context) error {
 	}
 	filename = strings.Replace(filename, ".html", ".md", 1)
 
-	// Convert from markdown to html.
-	bytes, err = ioutil.ReadFile(filename)
-	if err != nil {
-		return c.String(http.StatusNotFound, "File not found:"+filename)
+	// Special case handler for ToC.
+	if filename == "toc.html" {
+
+	} else {
+		// Convert from markdown to html.
+		bytes, err = ioutil.ReadFile(filename)
+		if err != nil {
+			return c.String(http.StatusNotFound, "File not found:"+filename)
+		}
 	}
 
 	params := blackfriday.HTMLRendererParameters{
 		CSS: "static/main.css",
-		Flags: blackfriday.CompletePage |
-			// TODO Won't work like this
-			blackfriday.SmartypantsQuotesNBSP |
+		Flags: // blackfriday.CompletePage |
+		// TODO Won't work like this
+		blackfriday.SmartypantsQuotesNBSP |
 			blackfriday.SmartypantsDashes |
 			blackfriday.SmartypantsLatexDashes,
 	}
@@ -61,13 +67,26 @@ func handle(c echo.Context) error {
 
 	// Add meta directive for better mobile rendering.
 	// We should add a patch to blackfriday to inject it as part of complete-page-rendering.
-	outstr = strings.ReplaceAll(outstr,
-		`<meta charset="utf-8">`,
-		`<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1" />`)
+	// outstr = strings.ReplaceAll(outstr,
+	// 	`<meta charset="utf-8">`,
+	// 	`<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1" />`)
 
 	c.Response().Header().Add("Content-Type", "text/html; charset=UTF-8")
+
+	btempl, err := ioutil.ReadFile("template.html")
+	if err != nil {
+		return c.String(http.StatusNotFound, "Template not found:"+filename)
+	}
+	outstr = strings.ReplaceAll(string(btempl), "${content}", outstr)
+	regex, err := regexp.Compile("<h1>(.*)</h1>")
+	if err != nil {
+		panic(err)
+	}
+	submatch := regex.FindStringSubmatch(outstr)
+	outstr = strings.ReplaceAll(outstr, "${title}", submatch[1])
+
 	return c.String(http.StatusOK, outstr)
 }
 
 // TODO Collect referer
-// TODO Allow own html template
+// TODO TOC
