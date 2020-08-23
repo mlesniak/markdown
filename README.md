@@ -15,7 +15,10 @@ This is a custom hacked-together markdown-to-html server for [mlesniak.com](http
 ## Run on server
 
     docker pull 116.203.24.33:5000/markdown:latest
-    docker run -d --name markdown -it -p 8088:8080 -v $(pwd)/data:/data 116.203.24.33:5000/markdown:latest
+    docker run -d --name markdown --env-file markdown.env -it -p 8088:8080 -v $(pwd)/data:/data 116.203.24.33:5000/markdown:latest
+    
+    # Get chatid using
+    http https://api.telegram.org/bot<TOKEN>/getUpdates
 
 ## Submit content
 
