@@ -1,3 +1,4 @@
+// TODO Refactor this...
 package main
 
 import (
@@ -21,11 +22,20 @@ func main() {
 }
 
 func handle(c echo.Context) error {
-	referer := c.Request().Header.Get("Referer")
-	println("referer: " + referer)
-
 	filename := c.Param("name")
-	println("request for " + filename)
+	referer := c.Request().Header.Get("Referer")
+
+	// Send log from Telegram bot.
+	var sb strings.Builder
+	if filename == "" {
+		sb.WriteString("/")
+	} else {
+		sb.WriteString(filename)
+	}
+	if referer != "" {
+		sb.WriteString(" <- " + referer)
+	}
+	sendMessage(sb.String())
 
 	// Default handler for root element.
 	if filename == "" {
