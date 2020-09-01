@@ -54,9 +54,8 @@ func handle(c echo.Context) error {
 	}
 
 	// Are we allowed to display this file?
-	err = checkPublicFile(c, filename, bs)
-	if err != nil {
-		return err
+	if !isPublicFile(bs) {
+		return c.String(http.StatusNotFound, "File not found:"+filename)
 	}
 
 	// Perform various pre-processing steps on the markdown.
@@ -81,16 +80,16 @@ func handle(c echo.Context) error {
 	return c.String(http.StatusOK, html)
 }
 
-// checkPublicFile checks if a file is allowed to be displayed: Since we are only
+// isPublicFile checks if a file is allowed to be displayed: Since we are only
 // downloading markdown files, we enforce that all files must contain the tag
 // `publishTag` to be able to download it.
-func checkPublicFile(c echo.Context, filename string, bs []byte) error {
+func isPublicFile(bs []byte) bool {
 	isPublic := bytes.Contains(bs, []byte(publishTag))
 	if !isPublic {
-		println("File not public: " + filename)
-		return c.String(http.StatusNotFound, "File not found:"+filename)
+		return false
 	}
-	return nil
+
+	return true
 }
 
 // processRawMarkdown performs various conversion steps which are not supported by
