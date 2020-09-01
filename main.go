@@ -53,12 +53,10 @@ func handle(c echo.Context) error {
 		return c.String(http.StatusNotFound, "File not found:"+filename)
 	}
 
-	// Sanity check: Since we are only downloading markdown files, we enforce that
-	// all files must contain the tag #public to be able to download it.
-	isPublic := bytes.Contains(bs, []byte(publishTag))
-	if !isPublic {
-		println("File not public: " + filename)
-		return c.String(http.StatusNotFound, "File not found:"+filename)
+	// Are we allowed to display this file?
+	err = checkPublicFile(c, filename, bs)
+	if err != nil {
+		return err
 	}
 
 	// Perform various pre-processing steps on the markdown.
@@ -81,6 +79,18 @@ func handle(c echo.Context) error {
 	// Return generated HTML file with correct content type.
 	c.Response().Header().Add("Content-Type", "text/html; charset=UTF-8")
 	return c.String(http.StatusOK, html)
+}
+
+// checkPublicFile checks if a file is allowed to be displayed: Since we are only
+// downloading markdown files, we enforce that all files must contain the tag
+// `publishTag` to be able to download it.
+func checkPublicFile(c echo.Context, filename string, bs []byte) error {
+	isPublic := bytes.Contains(bs, []byte(publishTag))
+	if !isPublic {
+		println("File not public: " + filename)
+		return c.String(http.StatusNotFound, "File not found:"+filename)
+	}
+	return nil
 }
 
 // processRawMarkdown performs various conversion steps which are not supported by
