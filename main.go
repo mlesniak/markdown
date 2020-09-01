@@ -5,6 +5,7 @@ package main
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -79,12 +80,30 @@ func handle(c echo.Context) error {
 	}
 	outstr = strings.ReplaceAll(outstr, "${title}", title)
 
+	// Format date
+
+	// Remove all found tags #\w+\S
+
+	// Handle wiki-Links
+	regex, err = regexp.Compile(`\[\[(.*?)\]\]`)
+	if err != nil {
+		panic(err)
+	}
+	submatches := regex.FindAllStringSubmatch(outstr, 10)
+	for _, matches := range submatches {
+		if len(matches) < 2 {
+			continue
+		}
+		m := matches[1]
+		link := strings.SplitN(m, " ", 2)[1]
+		link = fmt.Sprintf(`<a href="%s">%s</a>`, matches[1], link)
+		outstr = strings.ReplaceAll(outstr, matches[0], link)
+	}
+
 	return c.String(http.StatusOK, outstr)
 }
 
 func readFromDropbox(filename string) ([]byte, error) {
-	println("filename:" + filename)
-
 	client := http.Client{}
 	request, err := http.NewRequest("POST", "https://content.dropboxapi.com/2/files/download", nil)
 	if err != nil {
