@@ -14,7 +14,10 @@ import (
 	"github.com/russross/blackfriday/v2"
 )
 
-const rootFilename = "202009010520 index"
+const (
+	defaultTitle = "mlesniak.com"
+	rootFilename = "202009010520 index"
+)
 
 func main() {
 	e := echo.New()
@@ -27,6 +30,8 @@ func main() {
 	e.GET("/:name", handle)
 
 	// Start server.
+	e.HideBanner = true
+	e.HidePort = true
 	e.Logger.Fatal(e.Start(":8080"))
 }
 
@@ -36,56 +41,43 @@ func handle(c echo.Context) error {
 	filename := c.Param("name")
 	filename = fixFilename(filename)
 
-	var bs []byte
-	// Convert from markdown to html.
-	xs, err := readFromDropbox(filename)
-	bs = xs
+	// Read file from dropbox storage.
+	bs, err := readFromDropbox(filename)
 	if err != nil {
 		return c.String(http.StatusNotFound, "File not found:"+filename)
 	}
 
-	outstr := string(bs)
+	// Compute title from html.
+	titleLine := computeTitle(bs)
 
-	// Remove all tags
-	regex := regexp.MustCompile("[\\s]#\\w+\\S")
-	mtchs := regex.FindAllString(outstr, -1)
-	for _, mtch := range mtchs {
+	// Convert to html.
+	renderer := blackfriday.NewHTMLRenderer(blackfriday.HTMLRendererParameters{})
+	html := string(blackfriday.Run(bs, blackfriday.WithRenderer(renderer)))
+
+	// Remove all tags.
+	regex := regexp.MustCompile(`[\s]?#\w+`)
+	matches := regex.FindAllString(html, -1)
+	for _, mtch := range matches {
 		if mtch != "" {
-			outstr = strings.ReplaceAll(outstr, mtch, "")
+			html = strings.ReplaceAll(html, mtch, "")
 		}
 	}
 
-	params := blackfriday.HTMLRendererParameters{
-		CSS: "static/main.css",
-	}
-	renderer := blackfriday.NewHTMLRenderer(params)
-	output := blackfriday.Run([]byte(outstr), blackfriday.WithRenderer(renderer))
-	outstr = string(output)
-
-	c.Response().Header().Add("Content-Type", "text/html; charset=UTF-8")
-
-	btempl, err := ioutil.ReadFile("template.html")
+	// Inject rendered html into template and fill variables.
+	// If we'll have more variables we'd use proper templating.
+	bsTemplate, err := ioutil.ReadFile("template.html")
 	if err != nil {
-		return c.String(http.StatusNotFound, "Template not found:"+filename)
+		return c.String(http.StatusInternalServerError, "Template not found. This should never happen.")
 	}
-	outstr = strings.ReplaceAll(string(btempl), "${content}", outstr)
-	regex, err = regexp.Compile(`<h1>(.*)</h1>`)
-	if err != nil {
-		panic(err)
-	}
-	submatch := regex.FindStringSubmatch(outstr)
-	title := "mlesniak.com"
-	if len(submatch) > 0 {
-		title = submatch[1]
-	}
-	outstr = strings.ReplaceAll(outstr, "${title}", title)
+	html = strings.ReplaceAll(string(bsTemplate), "${content}", html)
+	html = strings.ReplaceAll(html, "${title}", titleLine)
 
 	// Handle wiki-Links
 	regex, err = regexp.Compile(`\[\[(.*?)\]\]`)
 	if err != nil {
 		panic(err)
 	}
-	submatches := regex.FindAllStringSubmatch(outstr, -1)
+	submatches := regex.FindAllStringSubmatch(html, -1)
 	for _, matches := range submatches {
 		if len(matches) < 2 {
 			continue
@@ -93,10 +85,24 @@ func handle(c echo.Context) error {
 		m := matches[1]
 		link := strings.SplitN(m, " ", 2)[1]
 		link = fmt.Sprintf(`<a href="%s">%s</a>`, matches[1], link)
-		outstr = strings.ReplaceAll(outstr, matches[0], link)
+		html = strings.ReplaceAll(html, matches[0], link)
 	}
 
-	return c.String(http.StatusOK, outstr)
+	c.Response().Header().Add("Content-Type", "text/html; charset=UTF-8")
+	return c.String(http.StatusOK, html)
+}
+
+// computeTitle uses the first line in markdown as title if available and feasible.
+// Otherwise, default title is used.
+func computeTitle(bs []byte) string {
+	titleLine := defaultTitle
+	lines := strings.SplitN(string(bs), "\n", 2)
+	if len(lines) > 0 {
+		titleLine = lines[0]
+		// titleLine = strings.ReplaceAll(titleLine, "#", "")
+		titleLine = strings.Trim(titleLine, " #")
+	}
+	return titleLine
 }
 
 // fixFilename transform the requested filename, i.e. redirects to
