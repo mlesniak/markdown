@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -15,10 +14,15 @@ import (
 )
 
 const (
+	// Default title if the title can not be extracted from the markdown file.
 	defaultTitle = "mlesniak.com"
+	// Name of the root file if no filename is specified.
 	rootFilename = "202009010520 index"
+	// Tag name to define markdown files which are allowed to be published.
+	publishTag = "#public"
 )
 
+// main is the entry point :-).
 func main() {
 	e := echo.New()
 
@@ -35,7 +39,9 @@ func main() {
 	e.Logger.Fatal(e.Start(":8080"))
 }
 
-// handle is the default handler for all non-static content.
+// handle is the default handler for all non-static content. It uses the parameter name
+// to download the correct markdown file from dropbox, perform various transformations
+// and convert it to html.
 func handle(c echo.Context) error {
 	// Prepare filename.
 	filename := c.Param("name")
@@ -43,26 +49,23 @@ func handle(c echo.Context) error {
 
 	// Read file from dropbox storage.
 	bs, err := readFromDropbox(filename)
-	markdown := string(bs)
 	if err != nil {
 		return c.String(http.StatusNotFound, "File not found:"+filename)
 	}
 
-	// TODO processMarkdown in own method
-
-	// Compute title from markdown.
-	titleLine := computeTitle(markdown)
-
-	// Remove all tags.
-	regex := regexp.MustCompile(`[\s]?#\w+`)
-	matches := regex.FindAllString(markdown, -1)
-	for _, match := range matches {
-		if match != "" {
-			markdown = strings.ReplaceAll(markdown, match, "")
-		}
+	// Sanity check: Since we are only downloading markdown files, we enforce that
+	// all files must contain the tag #public to be able to download it.
+	isPublic := bytes.Contains(bs, []byte(publishTag))
+	if !isPublic {
+		println("File not public: " + filename)
+		return c.String(http.StatusNotFound, "File not found:"+filename)
 	}
 
-	// Convert to html.
+	// Perform various pre-processing steps on the markdown.
+	markdown := processRawMarkdown(bs)
+	titleLine := computeTitle(markdown)
+
+	// Convert from (processed) markdown to html.
 	renderer := blackfriday.NewHTMLRenderer(blackfriday.HTMLRendererParameters{})
 	html := string(blackfriday.Run([]byte(markdown), blackfriday.WithRenderer(renderer)))
 
@@ -75,24 +78,41 @@ func handle(c echo.Context) error {
 	html = strings.ReplaceAll(string(bsTemplate), "${content}", html)
 	html = strings.ReplaceAll(html, "${title}", titleLine)
 
-	// Handle wiki-Links
-	regex, err = regexp.Compile(`\[\[(.*?)\]\]`)
-	if err != nil {
-		panic(err)
+	// Return generated HTML file with correct content type.
+	c.Response().Header().Add("Content-Type", "text/html; charset=UTF-8")
+	return c.String(http.StatusOK, html)
+}
+
+// processRawMarkdown performs various conversion steps which are not supported by
+// the markdown processor. In addition, it uses the first line of the file to compute
+// a potential title.
+func processRawMarkdown(rawMarkdown []byte) string {
+	markdown := string(rawMarkdown)
+
+	// Remove all tags.
+	regex := regexp.MustCompile(`[\s]?#\w+`)
+	matches := regex.FindAllString(markdown, -1)
+	for _, match := range matches {
+		if match != "" {
+			markdown = strings.ReplaceAll(markdown, match, "")
+		}
 	}
-	submatches := regex.FindAllStringSubmatch(html, -1)
+
+	// Handle wiki-Links.
+	regex = regexp.MustCompile(`\[\[(.*?)\]\]`)
+	submatches := regex.FindAllStringSubmatch(markdown, -1)
 	for _, matches := range submatches {
 		if len(matches) < 2 {
 			continue
 		}
-		m := matches[1]
-		link := strings.SplitN(m, " ", 2)[1]
-		link = fmt.Sprintf(`<a href="%s">%s</a>`, matches[1], link)
-		html = strings.ReplaceAll(html, matches[0], link)
+		fileLinkName := matches[1]
+		displayedName := strings.SplitN(fileLinkName, " ", 2)[1]
+		markdownLink := fmt.Sprintf(`[%s](%s)`, displayedName, fileLinkName)
+		wikiLink := matches[0]
+		markdown = strings.ReplaceAll(markdown, wikiLink, markdownLink)
 	}
 
-	c.Response().Header().Add("Content-Type", "text/html; charset=UTF-8")
-	return c.String(http.StatusOK, html)
+	return markdown
 }
 
 // computeTitle uses the first line in markdown as title if available and feasible.
@@ -125,32 +145,34 @@ func fixFilename(filename string) string {
 	return filename
 }
 
+// readFromDropbox downloads the requested file from dropbox.
+// TODO Dropbox client service
 func readFromDropbox(filename string) ([]byte, error) {
+	// Will be configured in the service later on.
+	token := os.Getenv("TOKEN")
+
+	// Create request.
 	client := http.Client{}
 	request, err := http.NewRequest("POST", "https://content.dropboxapi.com/2/files/download", nil)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("unable to create request: %s", err)
 	}
-	token := os.Getenv("TOKEN")
+	argument := fmt.Sprintf(`{"path": "/notes/%s"}`, filename)
 	request.Header.Add("Authorization", "Bearer "+token)
-	request.Header.Add("Dropbox-API-Arg", "{\"path\": \"/notes/"+filename+"\"}")
+	request.Header.Add("Dropbox-API-Arg", argument)
+
+	// Execute request.
 	resp, err := client.Do(request)
 	if err != nil {
 		panic(err)
 	}
 	defer resp.Body.Close()
 
-	all, err := ioutil.ReadAll(resp.Body)
+	// Read file content.
+	bs, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("unable to read file from response: %s", err)
 	}
 
-	isPublic := bytes.Contains(all, []byte("#public"))
-	if !isPublic {
-		println("File not public: " + filename)
-		return nil, errors.New("content is not public")
-	}
-
-	return all, err
-
+	return bs, err
 }
