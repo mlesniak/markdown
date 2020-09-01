@@ -117,9 +117,9 @@ func processRawMarkdown(rawMarkdown []byte) string {
 			continue
 		}
 		fileLinkName := matches[1]
+		wikiLink := matches[0]
 		displayedName := strings.SplitN(fileLinkName, " ", 2)[1]
 		markdownLink := fmt.Sprintf(`[%s](%s)`, displayedName, fileLinkName)
-		wikiLink := matches[0]
 		markdown = strings.ReplaceAll(markdown, wikiLink, markdownLink)
 	}
 
