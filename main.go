@@ -16,8 +16,10 @@ import (
 const (
 	// Default title if the title can not be extracted from the markdown file.
 	defaultTitle = "mlesniak.com"
+
 	// Name of the root file if no filename is specified.
 	rootFilename = "202009010520 index"
+
 	// Tag name to define markdown files which are allowed to be published.
 	publishTag = "#public"
 )
