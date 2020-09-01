@@ -58,7 +58,7 @@ func handle(c echo.Context) error {
 	outstr := string(bs)
 
 	// Remove all tags
-	regex := regexp.MustCompile("#\\w+\\S")
+	regex := regexp.MustCompile("[\\s]#\\w+\\S")
 	mtchs := regex.FindAllString(outstr, -1)
 	for _, mtch := range mtchs {
 		if mtch != "" {
