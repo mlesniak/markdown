@@ -55,12 +55,23 @@ func handle(c echo.Context) error {
 		return c.String(http.StatusNotFound, "File not found:"+filename)
 	}
 
+	outstr := string(bs)
+
+	// Remove all tags
+	regex := regexp.MustCompile("#\\w+\\S")
+	mtchs := regex.FindAllString(outstr, -1)
+	for _, mtch := range mtchs {
+		if mtch != "" {
+			outstr = strings.ReplaceAll(outstr, mtch, "")
+		}
+	}
+
 	params := blackfriday.HTMLRendererParameters{
 		CSS: "static/main.css",
 	}
 	renderer := blackfriday.NewHTMLRenderer(params)
-	output := blackfriday.Run(bs, blackfriday.WithRenderer(renderer))
-	outstr := string(output)
+	output := blackfriday.Run([]byte(outstr), blackfriday.WithRenderer(renderer))
+	outstr = string(output)
 
 	c.Response().Header().Add("Content-Type", "text/html; charset=UTF-8")
 
@@ -69,7 +80,7 @@ func handle(c echo.Context) error {
 		return c.String(http.StatusNotFound, "Template not found:"+filename)
 	}
 	outstr = strings.ReplaceAll(string(btempl), "${content}", outstr)
-	regex, err := regexp.Compile(`<h1>(.*)</h1>`)
+	regex, err = regexp.Compile(`<h1>(.*)</h1>`)
 	if err != nil {
 		panic(err)
 	}
@@ -80,16 +91,12 @@ func handle(c echo.Context) error {
 	}
 	outstr = strings.ReplaceAll(outstr, "${title}", title)
 
-	// Format date
-
-	// Remove all found tags #\w+\S
-
 	// Handle wiki-Links
 	regex, err = regexp.Compile(`\[\[(.*?)\]\]`)
 	if err != nil {
 		panic(err)
 	}
-	submatches := regex.FindAllStringSubmatch(outstr, 10)
+	submatches := regex.FindAllStringSubmatch(outstr, -1)
 	for _, matches := range submatches {
 		if len(matches) < 2 {
 			continue
