@@ -32,21 +32,11 @@ func main() {
 
 // handle is the default handler for all non-static content.
 func handle(c echo.Context) error {
+	// Prepare filename.
 	filename := c.Param("name")
-
-	// If / is requested we redirect to our index page.
-	if filename == "" {
-		filename = rootFilename
-	}
+	filename = fixFilename(filename)
 
 	var bs []byte
-
-	// If file does not end with .html, append it.
-	if !strings.HasSuffix(filename, ".html") {
-		filename = filename + ".html"
-	}
-	filename = strings.Replace(filename, ".html", ".md", 1)
-
 	// Convert from markdown to html.
 	xs, err := readFromDropbox(filename)
 	bs = xs
@@ -107,6 +97,23 @@ func handle(c echo.Context) error {
 	}
 
 	return c.String(http.StatusOK, outstr)
+}
+
+// fixFilename transform the requested filename, i.e. redirects to
+// index page or fixes simplified filenames without suffix.
+func fixFilename(filename string) string {
+	// If / is requested we redirect to our index page.
+	if filename == "" {
+		filename = rootFilename
+	}
+
+	// In our markup, wiki links have no markdown suffix.
+	// Append suffix if not yet present.
+	if !strings.HasSuffix(filename, ".md") {
+		filename = filename + ".md"
+	}
+
+	return filename
 }
 
 func readFromDropbox(filename string) ([]byte, error) {
