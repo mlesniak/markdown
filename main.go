@@ -1,5 +1,3 @@
-// TODO Refactor this...
-// TODO Use echo logging
 package main
 
 import (
@@ -16,31 +14,32 @@ import (
 	"github.com/russross/blackfriday/v2"
 )
 
+const rootFilename = "202009010520 index"
+
 func main() {
 	e := echo.New()
+
+	// Serve static files.
+	e.Static("/static", "static")
+
+	// Serve dynamic files.
 	e.GET("/", handle)
 	e.GET("/:name", handle)
-	e.Static("/static", "static")
+
+	// Start server.
 	e.Logger.Fatal(e.Start(":8080"))
 }
 
+// handle is the default handler for all non-static content.
 func handle(c echo.Context) error {
 	filename := c.Param("name")
 
-	// Default handler for root element.
+	// If / is requested we redirect to our index page.
 	if filename == "" {
-		filename = "202009010520 index"
+		filename = rootFilename
 	}
 
 	var bs []byte
-
-	// Deliver non-markdown files from local directory.
-	if !strings.HasSuffix(filename, ".md") {
-		_, err := ioutil.ReadFile(filename)
-		if err == nil {
-			return c.File(filename)
-		}
-	}
 
 	// If file does not end with .html, append it.
 	if !strings.HasSuffix(filename, ".html") {
