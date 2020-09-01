@@ -2,11 +2,12 @@
 package main
 
 import (
-	"fmt"
+	"bytes"
+	"errors"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"regexp"
-	"sort"
 	"strings"
 
 	"github.com/labstack/echo/v4"
@@ -39,12 +40,12 @@ func handle(c echo.Context) error {
 
 	// Default handler for root element.
 	if filename == "" {
-		filename = "index.html"
+		filename = "202009010520 index"
 	}
 
 	var bs []byte
 
-	// If a file with this name exists, simply deliver it.
+	// Deliver non-markdown files from local directory.
 	if !strings.HasSuffix(filename, ".md") {
 		_, err := ioutil.ReadFile(filename)
 		if err == nil {
@@ -52,60 +53,17 @@ func handle(c echo.Context) error {
 		}
 	}
 
-	// Markdown target name.
 	// If file does not end with .html, append it.
 	if !strings.HasSuffix(filename, ".html") {
 		filename = filename + ".html"
 	}
 	filename = strings.Replace(filename, ".html", ".md", 1)
 
-	// Special case handler for ToC.
-	if filename == "toc.md" {
-		ignored := make(map[string]bool)
-		ignored["template.html"] = true
-		ignored["smashup.html"] = true
-
-		// Generate markdown linked list
-		dirs, err := ioutil.ReadDir(".")
-		if err != nil {
-			return c.String(http.StatusNotFound, "TOC not found:"+filename)
-		}
-		var b strings.Builder
-		b.WriteString("<h1>List of all articles</h1>\n\n")
-
-		names := make([]string, 0)
-		for _, v := range dirs {
-			if v.IsDir() {
-				continue
-			}
-			if !strings.HasSuffix(v.Name(), ".md") {
-				continue
-			}
-			names = append(names, v.Name())
-		}
-		sort.Strings(names)
-
-		for _, name := range names {
-			if _, found := ignored[name]; found {
-				continue
-			}
-			href := strings.ReplaceAll(name, ".md", ".html")
-			tbs, err := ioutil.ReadFile(name)
-			if err != nil {
-				println("Unable to read file for title:" + name)
-				continue
-			}
-			title := strings.Trim(strings.Split(string(tbs), "\n")[0][1:], " ")
-			b.WriteString(fmt.Sprintf("- [%v](%v)\n", title, href))
-		}
-		bs = []byte(b.String())
-	} else {
-		// Convert from markdown to html.
-		xs, err := ioutil.ReadFile(filename)
-		bs = xs
-		if err != nil {
-			return c.String(http.StatusNotFound, "File not found:"+filename)
-		}
+	// Convert from markdown to html.
+	xs, err := readFromDropbox(filename)
+	bs = xs
+	if err != nil {
+		return c.String(http.StatusNotFound, "File not found:"+filename)
 	}
 
 	params := blackfriday.HTMLRendererParameters{
@@ -127,7 +85,43 @@ func handle(c echo.Context) error {
 		panic(err)
 	}
 	submatch := regex.FindStringSubmatch(outstr)
-	outstr = strings.ReplaceAll(outstr, "${title}", submatch[1])
+	title := "mlesniak.com"
+	if len(submatch) > 0 {
+		title = submatch[1]
+	}
+	outstr = strings.ReplaceAll(outstr, "${title}", title)
 
 	return c.String(http.StatusOK, outstr)
+}
+
+func readFromDropbox(filename string) ([]byte, error) {
+	println("filename:" + filename)
+
+	client := http.Client{}
+	request, err := http.NewRequest("POST", "https://content.dropboxapi.com/2/files/download", nil)
+	if err != nil {
+		panic(err)
+	}
+	token := os.Getenv("TOKEN")
+	request.Header.Add("Authorization", "Bearer "+token)
+	request.Header.Add("Dropbox-API-Arg", "{\"path\": \"/notes/"+filename+"\"}")
+	resp, err := client.Do(request)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	all, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	isPublic := bytes.Contains(all, []byte("#public"))
+	if !isPublic {
+		println("File not public: " + filename)
+		return nil, errors.New("content is not public")
+	}
+
+	return all, err
+
 }
