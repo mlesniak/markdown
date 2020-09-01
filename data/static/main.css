@@ -72,7 +72,7 @@ footer a {
 }
 
 a {
-    color: #ee0000;
+    color: #00aa00;
     text-decoration: none;
 }
 
@@ -191,4 +191,9 @@ header li a {
 
 li {
     list-style-type: square;
+}
+
+.header {
+    margin-bottom: 20px;
+    border-bottom: 1px solid #cccccc;
 }
