@@ -43,25 +43,28 @@ func handle(c echo.Context) error {
 
 	// Read file from dropbox storage.
 	bs, err := readFromDropbox(filename)
+	markdown := string(bs)
 	if err != nil {
 		return c.String(http.StatusNotFound, "File not found:"+filename)
 	}
 
-	// Compute title from html.
-	titleLine := computeTitle(bs)
+	// TODO processMarkdown in own method
 
-	// Convert to html.
-	renderer := blackfriday.NewHTMLRenderer(blackfriday.HTMLRendererParameters{})
-	html := string(blackfriday.Run(bs, blackfriday.WithRenderer(renderer)))
+	// Compute title from markdown.
+	titleLine := computeTitle(markdown)
 
 	// Remove all tags.
 	regex := regexp.MustCompile(`[\s]?#\w+`)
-	matches := regex.FindAllString(html, -1)
-	for _, mtch := range matches {
-		if mtch != "" {
-			html = strings.ReplaceAll(html, mtch, "")
+	matches := regex.FindAllString(markdown, -1)
+	for _, match := range matches {
+		if match != "" {
+			markdown = strings.ReplaceAll(markdown, match, "")
 		}
 	}
+
+	// Convert to html.
+	renderer := blackfriday.NewHTMLRenderer(blackfriday.HTMLRendererParameters{})
+	html := string(blackfriday.Run([]byte(markdown), blackfriday.WithRenderer(renderer)))
 
 	// Inject rendered html into template and fill variables.
 	// If we'll have more variables we'd use proper templating.
@@ -94,9 +97,9 @@ func handle(c echo.Context) error {
 
 // computeTitle uses the first line in markdown as title if available and feasible.
 // Otherwise, default title is used.
-func computeTitle(bs []byte) string {
+func computeTitle(markdown string) string {
 	titleLine := defaultTitle
-	lines := strings.SplitN(string(bs), "\n", 2)
+	lines := strings.SplitN(markdown, "\n", 2)
 	if len(lines) > 0 {
 		titleLine = lines[0]
 		// titleLine = strings.ReplaceAll(titleLine, "#", "")
