@@ -2,6 +2,7 @@ package dropbox
 
 import (
 	"fmt"
+	"github.com/labstack/echo/v4"
 	"io/ioutil"
 	"net/http"
 )
@@ -20,7 +21,13 @@ func New(token string) *Service {
 }
 
 // Read downloads the requested file from dropbox.
-func (s *Service) Read(filename string) ([]byte, error) {
+//
+// I'm still not happy that the echo logger interface is polluting our
+// dropbox service instead of a more general (log) or custom (zerolog)
+// interface. Of course, I could write a wrapper back from lecho to
+// zerolog, but this is a lot of work for this small program, hence 🤷‍.
+// Altough I miss zerlog's context, e.g. for filenames.
+func (s *Service) Read(log echo.Logger, filename string) ([]byte, error) {
 	// Create request.
 	client := http.Client{}
 	request, err := http.NewRequest("POST", "https://content.dropboxapi.com/2/files/download", nil)
@@ -47,5 +54,6 @@ func (s *Service) Read(filename string) ([]byte, error) {
 		return nil, fmt.Errorf("error reading file: %s", err)
 	}
 
+	log.Infof("Read file from dropbox. filename=%s", filename)
 	return bs, err
 }

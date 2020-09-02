@@ -5,6 +5,7 @@ go 1.13
 require (
 	github.com/labstack/echo/v4 v4.1.15
 	github.com/labstack/gommon v0.3.0
+	github.com/rs/zerolog v1.15.0
 	github.com/russross/blackfriday/v2 v2.0.1
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
 	github.com/ziflex/lecho/v2 v2.0.0

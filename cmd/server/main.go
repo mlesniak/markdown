@@ -40,6 +40,8 @@ func main() {
 		lecho.WithTimestamp(),
 	)
 	e.Logger = logger
+
+	// Configure middlewares.
 	e.Use(middleware.RequestID())
 	e.Use(lecho.Middleware(lecho.Config{
 		Logger: logger,
