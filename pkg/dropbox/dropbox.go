@@ -54,7 +54,7 @@ func (s *Service) Read(log echo.Logger, filename string) ([]byte, error) {
 		return nil, fmt.Errorf("unable to read data from response: %s", err)
 	}
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("error reading file: %s", err)
+		return nil, fmt.Errorf("non 200 response from dropbox: `%s`", string(bs))
 	}
 
 	// Return data and log elapsed time.

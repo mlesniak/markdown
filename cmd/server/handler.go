@@ -22,7 +22,7 @@ func handle(c echo.Context) error {
 	// Read file from dropbox storage.
 	bs, err := dropboxService.Read(c.Logger(), filename)
 	if err != nil {
-		log.Infof("Error reading file: %s", filename)
+		log.Infof("Error reading file: %v for %s", err, filename)
 		return c.String(http.StatusNotFound, "File not found:"+filename)
 	}
 
