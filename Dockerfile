@@ -2,8 +2,8 @@ FROM golang:alpine
 RUN apk add --no-cache git
 WORKDIR /markdown
 ADD . /markdown
-RUN go get .
-RUN go build .
+RUN go mod download
+RUN go build -o markdown cmd/server/main.go
 
 FROM alpine:latest
 WORKDIR /data
