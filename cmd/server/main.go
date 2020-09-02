@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/mlesniak/markdown/pkg/dropbox"
 	"os"
 )
@@ -29,6 +30,9 @@ func init() {
 
 func main() {
 	e := echo.New()
+
+	// Configure logging.
+	e.Use(middleware.Logger())
 
 	// Serve static files.
 	e.Static("/static", "static")
