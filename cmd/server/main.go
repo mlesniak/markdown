@@ -38,6 +38,7 @@ func main() {
 		os.Stdout,
 		lecho.WithLevel(log.INFO),
 		lecho.WithTimestamp(),
+		lecho.WithCallerWithSkipFrameCount(3),
 	)
 	e.Logger = logger
 
