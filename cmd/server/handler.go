@@ -24,7 +24,7 @@ func handle(c echo.Context) error {
 	}
 
 	// Are we allowed to display this file?
-	if !isPublicFile(bs) {
+	if !isPublic(bs) {
 		// We use the same error message to prevent
 		// guessing non-accessible filenames.
 		return c.String(http.StatusNotFound, "File not found:"+filename)
@@ -52,10 +52,10 @@ func handle(c echo.Context) error {
 	return c.String(http.StatusOK, html)
 }
 
-// isPublicFile checks if a file is allowed to be displayed: Since we are only
+// isPublic checks if a file is allowed to be displayed: Since we are only
 // downloading markdown files, we enforce that all files must contain the tag
 // `publishTag` to be able to download it.
-func isPublicFile(bs []byte) bool {
+func isPublic(bs []byte) bool {
 	return bytes.Contains(bs, []byte(publishTag))
 }
 
