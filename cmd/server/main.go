@@ -3,7 +3,9 @@ package main
 import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/labstack/gommon/log"
 	"github.com/mlesniak/markdown/pkg/dropbox"
+	"github.com/ziflex/lecho/v2"
 	"os"
 )
 
@@ -32,8 +34,16 @@ func main() {
 	e := echo.New()
 
 	// Configure logging.
+	logger := lecho.New(
+		os.Stdout,
+		lecho.WithLevel(log.INFO),
+		lecho.WithTimestamp(),
+	)
+	e.Logger = logger
 	e.Use(middleware.RequestID())
-	e.Use(middleware.Logger())
+	e.Use(lecho.Middleware(lecho.Config{
+		Logger: logger,
+	}))
 
 	// Serve static files.
 	e.Static("/static", "static")
