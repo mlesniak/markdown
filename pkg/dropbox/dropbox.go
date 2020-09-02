@@ -5,6 +5,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"io/ioutil"
 	"net/http"
+	"time"
 )
 
 type Service struct {
@@ -28,6 +29,8 @@ func New(token string) *Service {
 // zerolog, but this is a lot of work for this small program, hence 🤷‍.
 // Altough I miss zerlog's context, e.g. for filenames.
 func (s *Service) Read(log echo.Logger, filename string) ([]byte, error) {
+	start := time.Now()
+
 	// Create request.
 	client := http.Client{}
 	request, err := http.NewRequest("POST", "https://content.dropboxapi.com/2/files/download", nil)
@@ -54,6 +57,8 @@ func (s *Service) Read(log echo.Logger, filename string) ([]byte, error) {
 		return nil, fmt.Errorf("error reading file: %s", err)
 	}
 
-	log.Infof("Read file from dropbox. filename=%s", filename)
+	// Return data and log elapsed time.
+	elapsed := time.Since(start)
+	log.Infof("Read file from dropbox. filename=%s, duration=%v", filename, elapsed.Milliseconds())
 	return bs, err
 }
