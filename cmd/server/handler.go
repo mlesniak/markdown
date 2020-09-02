@@ -13,6 +13,8 @@ import (
 // to download the correct markdown file from dropbox, perform various transformations
 // and convert it to html.
 func handle(c echo.Context) error {
+	log := c.Logger()
+
 	// Prepare filename.
 	filename := c.Param("name")
 	filename = fixFilename(filename)
@@ -20,6 +22,7 @@ func handle(c echo.Context) error {
 	// Read file from dropbox storage.
 	bs, err := dropboxService.Read(filename)
 	if err != nil {
+		log.Infof("File not found: %s", filename)
 		return c.String(http.StatusNotFound, "File not found:"+filename)
 	}
 
@@ -27,6 +30,7 @@ func handle(c echo.Context) error {
 	if !isPublic(bs) {
 		// We use the same error message to prevent
 		// guessing non-accessible filenames.
+		log.Infof("File not public accessible: %s", filename)
 		return c.String(http.StatusNotFound, "File not found:"+filename)
 	}
 
@@ -42,6 +46,7 @@ func handle(c echo.Context) error {
 	// If we'll have more variables we'd use proper templating.
 	bsTemplate, err := ioutil.ReadFile("template.html")
 	if err != nil {
+		log.Info("Template not found")
 		return c.String(http.StatusInternalServerError, "Template not found. This should never happen.")
 	}
 	html = strings.ReplaceAll(string(bsTemplate), "${content}", html)
