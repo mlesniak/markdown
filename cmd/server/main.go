@@ -32,6 +32,7 @@ func main() {
 	e := echo.New()
 
 	// Configure logging.
+	e.Use(middleware.RequestID())
 	e.Use(middleware.Logger())
 
 	// Serve static files.
