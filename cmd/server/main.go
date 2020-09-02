@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"github.com/mlesniak/markdown/pkg/dropbox"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -24,7 +25,16 @@ const (
 	publishTag = "#public"
 )
 
-// main is the entry point :-).
+var dropboxService *dropbox.Service
+
+func init() {
+	dropboxToken := os.Getenv("TOKEN")
+	if dropboxToken == "" {
+		panic("No dropbox token set, aborting.")
+	}
+	dropboxService = dropbox.New(dropboxToken)
+}
+
 func main() {
 	e := echo.New()
 
@@ -50,7 +60,7 @@ func handle(c echo.Context) error {
 	filename = fixFilename(filename)
 
 	// Read file from dropbox storage.
-	bs, err := readFromDropbox(filename)
+	bs, err := dropboxService.Read(filename)
 	if err != nil {
 		return c.String(http.StatusNotFound, "File not found:"+filename)
 	}
@@ -154,36 +164,4 @@ func fixFilename(filename string) string {
 	}
 
 	return filename
-}
-
-// readFromDropbox downloads the requested file from dropbox.
-// TODO Dropbox client service
-func readFromDropbox(filename string) ([]byte, error) {
-	// Will be configured in the service later on.
-	token := os.Getenv("TOKEN")
-
-	// Create request.
-	client := http.Client{}
-	request, err := http.NewRequest("POST", "https://content.dropboxapi.com/2/files/download", nil)
-	if err != nil {
-		return nil, fmt.Errorf("unable to create request: %s", err)
-	}
-	argument := fmt.Sprintf(`{"path": "/notes/%s"}`, filename)
-	request.Header.Add("Authorization", "Bearer "+token)
-	request.Header.Add("Dropbox-API-Arg", argument)
-
-	// Execute request.
-	resp, err := client.Do(request)
-	if err != nil {
-		panic(err)
-	}
-	defer resp.Body.Close()
-
-	// Read file content.
-	bs, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("unable to read file from response: %s", err)
-	}
-
-	return bs, err
 }
