@@ -56,12 +56,7 @@ func handle(c echo.Context) error {
 // downloading markdown files, we enforce that all files must contain the tag
 // `publishTag` to be able to download it.
 func isPublicFile(bs []byte) bool {
-	isPublic := bytes.Contains(bs, []byte(publishTag))
-	if !isPublic {
-		return false
-	}
-
-	return true
+	return bytes.Contains(bs, []byte(publishTag))
 }
 
 // fixFilename transform the requested filename, i.e. redirects to
