@@ -2,12 +2,10 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/mlesniak/markdown/pkg/dropbox"
 	"io/ioutil"
 	"net/http"
 	"os"
-	"regexp"
 	"strings"
 
 	"github.com/labstack/echo/v4"
@@ -102,51 +100,6 @@ func isPublicFile(bs []byte) bool {
 	}
 
 	return true
-}
-
-// processRawMarkdown performs various conversion steps which are not supported by
-// the markdown processor. In addition, it uses the first line of the file to compute
-// a potential title.
-func processRawMarkdown(rawMarkdown []byte) string {
-	markdown := string(rawMarkdown)
-
-	// Remove all tags.
-	regex := regexp.MustCompile(`[\s]?#\w+`)
-	matches := regex.FindAllString(markdown, -1)
-	for _, match := range matches {
-		if match != "" {
-			markdown = strings.ReplaceAll(markdown, match, "")
-		}
-	}
-
-	// Handle wiki-Links.
-	regex = regexp.MustCompile(`\[\[(.*?)\]\]`)
-	submatches := regex.FindAllStringSubmatch(markdown, -1)
-	for _, matches := range submatches {
-		if len(matches) < 2 {
-			continue
-		}
-		fileLinkName := matches[1]
-		wikiLink := matches[0]
-		displayedName := strings.SplitN(fileLinkName, " ", 2)[1]
-		markdownLink := fmt.Sprintf(`[%s](%s)`, displayedName, fileLinkName)
-		markdown = strings.ReplaceAll(markdown, wikiLink, markdownLink)
-	}
-
-	return markdown
-}
-
-// computeTitle uses the first line in markdown as title if available and feasible.
-// Otherwise, default title is used.
-func computeTitle(markdown string) string {
-	titleLine := defaultTitle
-	lines := strings.SplitN(markdown, "\n", 2)
-	if len(lines) > 0 {
-		titleLine = lines[0]
-		// titleLine = strings.ReplaceAll(titleLine, "#", "")
-		titleLine = strings.Trim(titleLine, " #")
-	}
-	return titleLine
 }
 
 // fixFilename transform the requested filename, i.e. redirects to
