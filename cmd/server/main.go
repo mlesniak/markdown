@@ -27,7 +27,7 @@ func init() {
 	if dropboxToken == "" {
 		panic("No dropbox token set, aborting.")
 	}
-	dropboxService = dropbox.New(dropboxToken)
+	dropboxService = dropbox.New(dropboxToken, "notes/")
 }
 
 func main() {
