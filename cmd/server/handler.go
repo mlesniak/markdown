@@ -17,19 +17,22 @@ const staticRoot = "static/"
 // and convert it to html.
 func handle(c echo.Context) error {
 	log := c.Logger()
-
-	// Prepare filename.
 	filename := c.Param("name")
-	filename = fixFilename(filename)
 
 	// Check if filename exists in static root directory. This is secure without checking
 	// for parent paths (..) etc since we run in a docker container.
-	virtualPath := staticRoot + filename
-	_, err := os.Stat(virtualPath)
-	if os.IsExist(err) {
-		log.Infof("Serving static virtual file. filename=%s", filename)
-		return c.File(virtualPath)
+	if filename != "" {
+		virtualPath := staticRoot + filename
+		println(virtualPath)
+		_, err := os.Stat(virtualPath)
+		if err == nil {
+			log.Infof("Serving static virtual file. filename=%s", filename)
+			return c.File(virtualPath)
+		}
 	}
+
+	// Append markdown suffix and handle / - path.
+	filename = fixFilename(filename)
 
 	// Read file from dropbox storage.
 	bs, err := dropboxService.Read(c.Logger(), filename)

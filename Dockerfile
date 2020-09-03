@@ -7,5 +7,6 @@ RUN go build -o markdown cmd/server/*.go
 
 FROM alpine:latest
 WORKDIR /data
+ADD data .
 COPY --from=0 /markdown/markdown /markdown/server
 ENTRYPOINT ["/markdown/server"]
