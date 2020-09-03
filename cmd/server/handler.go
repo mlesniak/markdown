@@ -6,8 +6,11 @@ import (
 	"github.com/russross/blackfriday/v2"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 )
+
+const staticRoot = "static/"
 
 // handle is the default handler for all non-static content. It uses the parameter name
 // to download the correct markdown file from dropbox, perform various transformations
@@ -18,6 +21,15 @@ func handle(c echo.Context) error {
 	// Prepare filename.
 	filename := c.Param("name")
 	filename = fixFilename(filename)
+
+	// Check if filename exists in static root directory. This is secure without checking
+	// for parent paths (..) etc since we run in a docker container.
+	virtualPath := staticRoot + filename
+	_, err := os.Stat(virtualPath)
+	if os.IsExist(err) {
+		log.Infof("Serving static virtual file. filename=%s", filename)
+		return c.File(virtualPath)
+	}
 
 	// Read file from dropbox storage.
 	bs, err := dropboxService.Read(c.Logger(), filename)
