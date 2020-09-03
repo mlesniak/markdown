@@ -18,16 +18,19 @@ TODO Write documentation with dropbox screenshots, etc.
 
 ## Run on server
 
+    # cat markdown.env
+    TOKEN=<DROPBOX TOKEN>
+    LOGS_ENABLED=true
+
     docker pull 116.203.24.33:5000/markdown:latest
     docker run -d --name markdown --env-file markdown.env -it -p 8088:8080 -v $(pwd)/data:/data 116.203.24.33:5000/markdown:latest
     
-    # Get chatid using
-    http https://api.telegram.org/bot<TOKEN>/getUpdates
+## Start logging daemon
 
-## Submit content
-
-    ./publish.sh
-
-## Things todo
-
-[ ] Add Sonarqube support
+    docker run -d --name st-logagent --restart=always \
+      -v /var/run/docker.sock:/var/run/docker.sock \
+      -e LOGS_TOKEN="<TOKEN>" \
+      -e LOGS_ENABLED_DEFAULT=false \
+      -e REGION=EU \
+      sematext/logagent:latest
+      
