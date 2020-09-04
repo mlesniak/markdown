@@ -33,3 +33,6 @@ This is a custom hacked-together markdown-to-html server for [mlesniak.com](http
       -e REGION=EU \
       sematext/logagent:latest
       
+## License
+
+The source code is licensed under the [Apache license](LICENSE).      
