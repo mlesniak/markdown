@@ -38,7 +38,7 @@ func New(token string, rootDirectory string) *Service {
 // dropbox service instead of a more general (log) or custom (zerolog)
 // interface. Of course, I could write a wrapper back from lecho to
 // zerolog, but this is a lot of work for this small program, hence 🤷‍.
-// Altough I miss zerlog's context, e.g. for filenames.
+// Although I miss zerlog's context, e.g. for filenames.
 func (s *Service) Read(log echo.Logger, filename string) ([]byte, error) {
 	start := time.Now()
 
