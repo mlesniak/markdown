@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+// Service contains the necessary data to access a dropbox.
 type Service struct {
 	token         string
 	rootDirectory string
