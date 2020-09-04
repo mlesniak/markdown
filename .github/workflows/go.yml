@@ -21,13 +21,25 @@ jobs:
 #        repository: mlesniak/markdown
 #        tags: latest
 
-    - name: ls -a via ssh
-      uses: garygrossgarten/github-action-ssh@release
+    - name: Restart
+      uses: alinz/ssh-scp-action@master
       with:
-        command: ls -a
+        key: ${{ secrets.PRIVATE_KEY }}
         host: mlesniak.com
-        username: ${{ secrets.USERNAME}}
-        privateKey: ${{ secrets.PRIVATE_KEY}}
+        port: 22
+        user: ${{ secrets.USERNAME}}
+        # runs this on remove server
+        ssh_before: |
+          ls -lath
+
+
+#    - name: ls -a via ssh
+#      uses: garygrossgarten/github-action-ssh@release
+#      with:
+#        command: ls -a
+#        host: mlesniak.com
+#        username: ${{ secrets.USERNAME}}
+#        privateKey: ${{ secrets.PRIVATE_KEY}}
 
 
 #    - name: Set up Go 1.x
