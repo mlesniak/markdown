@@ -12,11 +12,12 @@ jobs:
 
     - name: Build and push Docker
       uses: docker/build-push-action@v1.1.0
-      registry: ghcr.io
-      username: ${{ secrets.DOCKER_USERNAME }}
-      password: ${{ secrets.DOCKER_PASSWORD }}
-      repository: mlesniak/markdown
-      tags: latest
+      with:
+        registry: ghcr.io
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        repository: mlesniak/markdown
+        tags: latest
 
 
 #    - name: Set up Go 1.x
