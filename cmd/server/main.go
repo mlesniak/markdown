@@ -18,6 +18,12 @@ const (
 
 	// Tag name to define markdown files which are allowed to be published.
 	publishTag = "#public"
+
+	// External mountable directory to publish files.
+	downloadRoot = "download/"
+
+	// Directory containing static files for website.
+	staticRoot = "static/"
 )
 
 var dropboxService *dropbox.Service
@@ -48,8 +54,9 @@ func main() {
 		Logger: logger,
 	}))
 
-	// Serve static files.
-	e.Static("/static", "static")
+	// Serve static and downloadable files.
+	e.Static("/static", staticRoot)
+	e.Static("/download", downloadRoot)
 
 	// Serve dynamic files.
 	e.GET("/", handle)

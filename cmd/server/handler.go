@@ -10,8 +10,6 @@ import (
 	"strings"
 )
 
-const staticRoot = "static/"
-
 // handle is the default handler for all non-static content. It uses the parameter name
 // to download the correct markdown file from dropbox, perform various transformations
 // and convert it to html.
