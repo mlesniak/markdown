@@ -1,4 +1,4 @@
-![Automatic build, push and deploy](https://github.com/mlesniak/markdown/workflows/Build,%20Push%20and%20Deploy/badge.svg)
+[![Automatic build, push and deploy](https://github.com/mlesniak/markdown/workflows/Build,%20Push%20and%20Deploy/badge.svg)](https://github.com/mlesniak/markdown/actions?query=workflow%3A%22Build%2C+Push+and+Deploy%22)
 
 # Overview
 
