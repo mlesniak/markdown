@@ -12,55 +12,25 @@ jobs:
 
     - uses: actions/checkout@v2
 
-#    - name: Build and push Docker
-#      uses: docker/build-push-action@v1.1.0
-#      with:
-#        registry: ghcr.io
-#        username: ${{ secrets.DOCKER_USERNAME }}
-#        password: ${{ secrets.DOCKER_PASSWORD }}
-#        repository: mlesniak/markdown
-#        tags: latest
+    - name: Build and push Docker
+      uses: docker/build-push-action@v1.1.0
+      with:
+        registry: ghcr.io
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        repository: mlesniak/markdown
+        tags: latest
 
-    - name: Restart
+    - name: Pull, stop and restart
       uses: alinz/ssh-scp-action@master
       with:
         key: ${{ secrets.PRIVATE_KEY }}
         host: mlesniak.com
         port: 22
         user: ${{ secrets.USERNAME}}
-        # runs this on remove server
+        # runs this on remote server
         ssh_before: |
-          ls -lath
+          docker pull ghcr.io/mlesniak/markdown:latest
+          docker rm --force markdown
+          docker run -d --name markdown --env-file markdown.env -v /root/download:/data/download -it -p 8088:8080 ghcr.io/mlesniak/markdown:latest
 
-
-#    - name: ls -a via ssh
-#      uses: garygrossgarten/github-action-ssh@release
-#      with:
-#        command: ls -a
-#        host: mlesniak.com
-#        username: ${{ secrets.USERNAME}}
-#        privateKey: ${{ secrets.PRIVATE_KEY}}
-
-
-#    - name: Set up Go 1.x
-#      uses: actions/setup-go@v2
-#      with:
-#        go-version: ^1.13
-#      id: go
-#
-#    - name: Check out code into the Go module édirectory
-#      uses: actions/checkout@v2
-#
-#    - name: Get dependencies
-#      run: |
-#        go get -v -t -d ./...
-#        if [ -f Gopkg.toml ]; then
-#            curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-#            dep ensure
-#        fi
-#
-#    - name: Build
-#      run: go build -v .
-#
-#    - name: Test
-#      run: go test -v .
