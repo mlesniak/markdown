@@ -1,4 +1,5 @@
-[![Automatic build, push and deploy](https://github.com/mlesniak/markdown/workflows/Build,%20Push%20and%20Deploy/badge.svg)](https://github.com/mlesniak/markdown/actions?query=workflow%3A%22Build%2C+Push+and+Deploy%22)
+[![Automatic build, push and deploy](https://github.com/mlesniak/markdown/workflows/Build,%20Push%20and%20Deploy/badge.svg)](https://github.com/mlesniak/markdown/actions?query=workflow%3A%22Build%2C+Push+and+Deploy%22) 
+[![Go Report Card](https://goreportcard.com/badge/github.com/mlesniak/markdown)](https://goreportcard.com/report/github.com/mlesniak/markdown)
 
 # Overview
 
