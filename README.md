@@ -1,3 +1,5 @@
+![Automatic build, push and deploy](https://github.com/mlesniak/markdown/workflows/Build,%20Push%20and%20Deploy/badge.svg)
+
 # Overview
 
 This is a custom hacked-together markdown-to-html server for [mlesniak.com](https://mlesniak.com) which uses dropbox to retrieve files to display, hence we can edit content in realtime using any tools we like. See [here](https://mlesniak.com/202009011431%20Missing%20Features) for implemented and planned features. 
