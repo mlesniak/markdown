@@ -84,6 +84,13 @@ func dropboxChallenge(c echo.Context) error {
 }
 
 func dropboxUpdate(c echo.Context) error {
+	// If we have no cursor, use files/list and update cursor
+	// If we have one, use this one, files/list/continue and update cursor
+
+	// We do not need to check the body since it's an internal application and
+	// you do not need to verify which user account has changed data, since it
+	// was mine by definition.
+
 	// Parse changes and update cache.
 	bs, err := ioutil.ReadAll(c.Request().Body)
 	if err != nil {
