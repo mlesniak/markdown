@@ -45,10 +45,19 @@ func handle(c echo.Context) error {
 	// Check if the file is in cache.
 	entry, ok := cache[filename]
 	if ok {
-		// Return generated HTML file with correct content type.
-		log.Infof("Using cache, TTL=todo. filename=%s", filename)
-		c.Response().Header().Add("Content-Type", "text/html; charset=UTF-8")
-		return c.String(http.StatusOK, string(entry.data))
+		// Check TTL
+		maxTTL, _ := time.ParseDuration("5s")
+		validTill := entry.createdAt.Add(maxTTL)
+		if validTill.After(time.Now()) {
+			// Return generated HTML file with correct content type.
+			log.Infof("Using cache, validTill=%v. filename=%s", validTill, filename)
+			c.Response().Header().Add("Content-Type", "text/html; charset=UTF-8")
+			return c.String(http.StatusOK, string(entry.data))
+		} else {
+			// Remove from cache.
+			log.Infof("Deleting from cache and retrieving again. filename=%s", filename)
+			delete(cache, filename)
+		}
 	}
 
 	// Read file from dropbox storage.
