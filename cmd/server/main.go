@@ -6,6 +6,8 @@ import (
 	"github.com/labstack/gommon/log"
 	"github.com/mlesniak/markdown/pkg/dropbox"
 	"github.com/ziflex/lecho/v2"
+	"io/ioutil"
+	"net/http"
 	"os"
 )
 
@@ -62,8 +64,32 @@ func main() {
 	e.GET("/", handle)
 	e.GET("/:name", handle)
 
+	// Handle cache invalidation through dropbox webhooks.
+	e.GET("/dropbox/webhook", dropboxWebhook)
+
 	// Start server.
 	e.HideBanner = true
 	e.HidePort = true
 	e.Logger.Fatal(e.Start(":8080"))
+}
+
+func dropboxWebhook(c echo.Context) error {
+	challenge := c.Request().FormValue("challenge")
+	// Initial dropbox challenge to register webhook.
+	if challenge != "" {
+		header := c.Response().Header()
+		header.Add("Content-Type", "text/plain")
+		header.Add("X-Content-Type-Options", "nosniff")
+		return c.String(http.StatusOK, challenge)
+	}
+
+	// Normal hook. Simply print it.
+	bs, err := ioutil.ReadAll(c.Request().Body)
+	if err != nil {
+		panic(err)
+	}
+	defer c.Request().Body.Close()
+	println(bs)
+
+	return c.NoContent(http.StatusOK)
 }
