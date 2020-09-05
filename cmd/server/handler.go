@@ -42,22 +42,10 @@ func handle(c echo.Context) error {
 	// Append markdown suffix and handle / - path.
 	filename = fixFilename(filename)
 
-	// Check if the file is in cache.
-	entry, ok := cache[filename]
-	if ok {
-		// Check TTL
-		maxTTL, _ := time.ParseDuration("5s")
-		validTill := entry.createdAt.Add(maxTTL)
-		if validTill.After(time.Now()) {
-			// Return generated HTML file with correct content type.
-			log.Infof("Using cache, validTill=%v. filename=%s", validTill, filename)
-			c.Response().Header().Add("Content-Type", "text/html; charset=UTF-8")
-			return c.String(http.StatusOK, string(entry.data))
-		} else {
-			// Remove from cache.
-			log.Infof("Deleting from cache and retrieving again. filename=%s", filename)
-			delete(cache, filename)
-		}
+	// Check if the file is in cache and can be used.
+	stop := useCache(c, filename)
+	if stop {
+		return nil
 	}
 
 	// Try to read file from dropbox storage.
@@ -71,6 +59,31 @@ func handle(c echo.Context) error {
 	// Return generated HTML file with correct content type.
 	c.Response().Header().Add("Content-Type", "text/html; charset=UTF-8")
 	return c.String(http.StatusOK, html)
+}
+
+// useCache tries to use the cache entry to serve a precomputed and stored file.
+func useCache(c echo.Context, filename string) bool {
+	log := c.Logger()
+
+	entry, ok := cache[filename]
+	if ok {
+		// Check TTL
+		maxTTL, _ := time.ParseDuration("5s")
+		validTill := entry.createdAt.Add(maxTTL)
+		if validTill.After(time.Now()) {
+			// Return generated HTML file with correct content type.
+			log.Infof("Using cache, validTill=%v. filename=%s", validTill, filename)
+			c.Response().Header().Add("Content-Type", "text/html; charset=UTF-8")
+			c.String(http.StatusOK, string(entry.data))
+			return true
+		} else {
+			// Remove from cache.
+			log.Infof("Deleting from cache and retrieving again. filename=%s", filename)
+			delete(cache, filename)
+		}
+	}
+
+	return false
 }
 
 // readFromStorage reads the given file from dropbox. If there is an error,
