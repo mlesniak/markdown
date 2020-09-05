@@ -65,7 +65,8 @@ func main() {
 	e.GET("/:name", handle)
 
 	// Handle cache invalidation through dropbox webhooks.
-	e.GET("/dropbox/webhook", dropboxWebhook)
+	e.GET("/dropbox/webhook", dropboxChallenge)
+	e.POST("/dropbox/webhook", dropboxUpdate)
 
 	// Start server.
 	e.HideBanner = true
@@ -73,16 +74,26 @@ func main() {
 	e.Logger.Fatal(e.Start(":8080"))
 }
 
-func dropboxWebhook(c echo.Context) error {
+func dropboxChallenge(c echo.Context) error {
 	challenge := c.Request().FormValue("challenge")
 	// Initial dropbox challenge to register webhook.
-	if challenge != "" {
-		header := c.Response().Header()
-		header.Add("Content-Type", "text/plain")
-		header.Add("X-Content-Type-Options", "nosniff")
-		return c.String(http.StatusOK, challenge)
-	}
+	header := c.Response().Header()
+	header.Add("Content-Type", "text/plain")
+	header.Add("X-Content-Type-Options", "nosniff")
+	return c.String(http.StatusOK, challenge)
 
+	// Normal hook. Simply print it.
+	bs, err := ioutil.ReadAll(c.Request().Body)
+	if err != nil {
+		panic(err)
+	}
+	defer c.Request().Body.Close()
+	println(bs)
+
+	return c.NoContent(http.StatusOK)
+}
+
+func dropboxUpdate(c echo.Context) error {
 	// Normal hook. Simply print it.
 	bs, err := ioutil.ReadAll(c.Request().Body)
 	if err != nil {
