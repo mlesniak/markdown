@@ -43,17 +43,16 @@ func handle(c echo.Context) error {
 	filename = fixFilename(filename)
 
 	// Check if the file is in cache and can be used.
-	stop := useCache(c, filename)
-	if stop {
-		return nil
-	}
-
-	// Try to read file from dropbox storage.
-	html, stop := readFromStorage(c, filename)
-	if stop {
-		// We stop delivery due to some error which was already stored in the
-		// echo context using c.String.
-		return nil
+	html, found := useCache(c, filename)
+	if !found {
+		// Try to read file from dropbox storage.
+		tmp, stop := readFromStorage(c, filename)
+		if stop {
+			// We stop delivery due to some error which was already stored in the
+			// echo context using c.String.
+			return nil
+		}
+		html = tmp
 	}
 
 	// Return generated HTML file with correct content type.
@@ -62,7 +61,7 @@ func handle(c echo.Context) error {
 }
 
 // useCache tries to use the cache entry to serve a precomputed and stored file.
-func useCache(c echo.Context, filename string) bool {
+func useCache(c echo.Context, filename string) (string, bool) {
 	log := c.Logger()
 
 	entry, ok := cache[filename]
@@ -71,11 +70,9 @@ func useCache(c echo.Context, filename string) bool {
 		maxTTL, _ := time.ParseDuration("5s")
 		validTill := entry.createdAt.Add(maxTTL)
 		if validTill.After(time.Now()) {
-			// Return generated HTML file with correct content type.
+			// Entry still valid.
 			log.Infof("Using cache, validTill=%v. filename=%s", validTill, filename)
-			c.Response().Header().Add("Content-Type", "text/html; charset=UTF-8")
-			c.String(http.StatusOK, string(entry.data))
-			return true
+			return string(entry.data), true
 		} else {
 			// Remove from cache.
 			log.Infof("Deleting from cache and retrieving again. filename=%s", filename)
@@ -83,7 +80,7 @@ func useCache(c echo.Context, filename string) bool {
 		}
 	}
 
-	return false
+	return "", false
 }
 
 // readFromStorage reads the given file from dropbox. If there is an error,
