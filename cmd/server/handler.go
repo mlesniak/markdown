@@ -60,11 +60,31 @@ func handle(c echo.Context) error {
 		}
 	}
 
-	// Read file from dropbox storage.
+	// Try to read file from dropbox storage.
+	html, stop := readFromStorage(c, filename)
+	if stop {
+		// We stop delivery due to some error which was already stored in the
+		// echo context using c.String.
+		return nil
+	}
+
+	// Return generated HTML file with correct content type.
+	c.Response().Header().Add("Content-Type", "text/html; charset=UTF-8")
+	return c.String(http.StatusOK, html)
+}
+
+// readFromStorage reads the given file from dropbox. If there is an error,
+// false is returned and an error message is stored in the return value of
+// the context, i.e. with c.String(...).
+func readFromStorage(c echo.Context, filename string) (string, bool) {
+	log := c.Logger()
+
+	// Read file from dropbox.
 	bs, err := dropboxService.Read(c.Logger(), filename)
 	if err != nil {
 		log.Infof("Error reading file: %v for %s", err, filename)
-		return c.String(http.StatusNotFound, "File not found:"+filename)
+		_ = c.String(http.StatusNotFound, "File not found:"+filename)
+		return "", true
 	}
 
 	// Are we allowed to display this file?
@@ -72,7 +92,8 @@ func handle(c echo.Context) error {
 		// We use the same error message to prevent
 		// guessing non-accessible filenames.
 		log.Infof("File not public accessible: %s", filename)
-		return c.String(http.StatusNotFound, "File not found:"+filename)
+		_ = c.String(http.StatusNotFound, "File not found:"+filename)
+		return "", true
 	}
 
 	// Perform various pre-processing steps on the markdown.
@@ -88,7 +109,8 @@ func handle(c echo.Context) error {
 	bsTemplate, err := ioutil.ReadFile("template.html")
 	if err != nil {
 		log.Info("Template not found")
-		return c.String(http.StatusInternalServerError, "Template not found. This should never happen.")
+		_ = c.String(http.StatusInternalServerError, "Template not found. This should never happen.")
+		return "", true
 	}
 	html = strings.ReplaceAll(string(bsTemplate), "${content}", html)
 	html = strings.ReplaceAll(html, "${title}", titleLine)
@@ -100,9 +122,7 @@ func handle(c echo.Context) error {
 		data:      []byte(html),
 	}
 
-	// Return generated HTML file with correct content type.
-	c.Response().Header().Add("Content-Type", "text/html; charset=UTF-8")
-	return c.String(http.StatusOK, html)
+	return html, false
 }
 
 // isPublic checks if a file is allowed to be displayed: Since we are only
