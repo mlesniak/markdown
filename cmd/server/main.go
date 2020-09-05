@@ -84,7 +84,7 @@ func dropboxChallenge(c echo.Context) error {
 }
 
 func dropboxUpdate(c echo.Context) error {
-	// Normal hook. Simply print it.
+	// Parse changes and update cache.
 	bs, err := ioutil.ReadAll(c.Request().Body)
 	if err != nil {
 		panic(err)
