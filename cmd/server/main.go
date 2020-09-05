@@ -81,16 +81,6 @@ func dropboxChallenge(c echo.Context) error {
 	header.Add("Content-Type", "text/plain")
 	header.Add("X-Content-Type-Options", "nosniff")
 	return c.String(http.StatusOK, challenge)
-
-	// Normal hook. Simply print it.
-	bs, err := ioutil.ReadAll(c.Request().Body)
-	if err != nil {
-		panic(err)
-	}
-	defer c.Request().Body.Close()
-	println(bs)
-
-	return c.NoContent(http.StatusOK)
 }
 
 func dropboxUpdate(c echo.Context) error {
@@ -100,7 +90,7 @@ func dropboxUpdate(c echo.Context) error {
 		panic(err)
 	}
 	defer c.Request().Body.Close()
-	println(bs)
+	println(string(bs))
 
 	return c.NoContent(http.StatusOK)
 }
