@@ -67,7 +67,7 @@ func useCache(c echo.Context, filename string) (string, bool) {
 	entry, ok := cache[filename]
 	if ok {
 		// Check TTL
-		maxTTL, _ := time.ParseDuration("5s")
+		maxTTL, _ := time.ParseDuration("60s")
 		validTill := entry.createdAt.Add(maxTTL)
 		if validTill.After(time.Now()) {
 			// Entry still valid.
