@@ -116,7 +116,7 @@ func dropboxUpdate(c echo.Context) error {
 			}
 			var es entries
 			json.Unmarshal(bs, &es)
-			performCacheUpdate(log, es.Entries)
+			performCacheUpdate(c, es.Entries)
 			cursor = es.Cursor
 		}()
 	} else {
@@ -133,7 +133,7 @@ func dropboxUpdate(c echo.Context) error {
 			}
 			var es entries
 			json.Unmarshal(bs, &es)
-			performCacheUpdate(log, es.Entries)
+			performCacheUpdate(c, es.Entries)
 			cursor = es.Cursor
 		}()
 	}
@@ -141,9 +141,11 @@ func dropboxUpdate(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
-func performCacheUpdate(log echo.Logger, entries []entry) {
+func performCacheUpdate(c echo.Context, entries []entry) {
+	log := c.Logger()
+
 	for _, e := range entries {
-		log.Infof("Removing from cache. filename=%s", e.Name)
-		delete(cache, e.Name)
+		log.Infof("Updating cache entry. filename=%s", e.Name)
+		readFromStorage(c, e.Name)
 	}
 }
