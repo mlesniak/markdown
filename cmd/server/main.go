@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
@@ -86,16 +85,18 @@ func dropboxChallenge(c echo.Context) error {
 
 var cursor string
 
+type entry struct {
+	Tag  string `json:".tag"`
+	Name string `json:"name"`
+}
+
 // Here is a simple DOS attach possible preventing good cache behaviour? Think about this.
 func dropboxUpdate(c echo.Context) error {
+	log := c.Logger()
+
 	// We do not need to check the body since it's an internal application and
 	// you do not need to verify which user account has changed data, since it
 	// was mine by definition.
-	type entry struct {
-		Tag  string `json:".tag"`
-		Name string `json:"name"`
-	}
-
 	type entries struct {
 		Entries []entry `json:"entries"`
 		Cursor  string  `json:"cursor"`
@@ -115,7 +116,7 @@ func dropboxUpdate(c echo.Context) error {
 			}
 			var es entries
 			json.Unmarshal(bs, &es)
-			fmt.Printf("%v\n", es)
+			performCacheUpdate(log, es.Entries)
 			cursor = es.Cursor
 		}()
 	} else {
@@ -132,10 +133,17 @@ func dropboxUpdate(c echo.Context) error {
 			}
 			var es entries
 			json.Unmarshal(bs, &es)
-			fmt.Printf("%v\n", es)
+			performCacheUpdate(log, es.Entries)
 			cursor = es.Cursor
 		}()
 	}
 
 	return c.NoContent(http.StatusOK)
+}
+
+func performCacheUpdate(log echo.Logger, entries []entry) {
+	for _, e := range entries {
+		log.Infof("Removing from cache. filename=%s", e.Name)
+		delete(cache, e.Name)
+	}
 }
