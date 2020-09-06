@@ -73,7 +73,7 @@ func useCache(c echo.Context, filename string) (string, bool) {
 }
 
 // readFromStorage reads the given file from dropbox. If there is an error,
-// false is returned and an error message is stored in the return value of
+// true is returned and an error message is stored in the return value of
 // the context, i.e. with c.String(...).
 func readFromStorage(c echo.Context, filename string) (string, bool) {
 	log := c.Logger()
