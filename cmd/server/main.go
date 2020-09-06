@@ -74,6 +74,8 @@ func main() {
 	e.Logger.Fatal(e.Start(":8080"))
 }
 
+var cursor string
+
 func dropboxChallenge(c echo.Context) error {
 	challenge := c.Request().FormValue("challenge")
 	// Initial dropbox challenge to register webhook.
@@ -84,6 +86,10 @@ func dropboxChallenge(c echo.Context) error {
 }
 
 func dropboxUpdate(c echo.Context) error {
+	if cursor == "" {
+
+	}
+
 	// If we have no cursor, use files/list and update cursor
 	// If we have one, use this one, files/list/continue and update cursor
 

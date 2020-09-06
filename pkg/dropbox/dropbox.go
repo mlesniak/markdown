@@ -42,14 +42,24 @@ func New(token string, rootDirectory string) *Service {
 // Although I miss zerlog's context, e.g. for filenames.
 func (s *Service) Read(log echo.Logger, filename string) ([]byte, error) {
 	start := time.Now()
+	argument := fmt.Sprintf(`{"path": "/%s%s"}`, s.rootDirectory, filename)
+	bs, err := s.apiCall("files/download", argument)
+	if err != nil {
+		return nil, err
+	}
+	log.Infof("Read file from dropbox. filename=%s, duration=%v", filename, time.Since(start).Milliseconds())
+	return bs, err
+}
 
-	// Create request.
+// apiCall generalizes different api calls to dropbox.
+func (s *Service) apiCall(url string, argument string) ([]byte, error) {
+	// Create general request.
 	client := http.Client{}
-	request, err := http.NewRequest("POST", "https://content.dropboxapi.com/2/files/download", nil)
+	request, err := http.NewRequest("POST", "https://content.dropboxapi.com/2/"+url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create request: %s", err)
 	}
-	argument := fmt.Sprintf(`{"path": "/%s%s"}`, s.rootDirectory, filename)
+
 	request.Header.Add("Authorization", "Bearer "+s.token)
 	request.Header.Add("Dropbox-API-Arg", argument)
 
@@ -60,7 +70,7 @@ func (s *Service) Read(log echo.Logger, filename string) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 
-	// Read file content.
+	// Read response.
 	bs, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("unable to read data from response: %s", err)
@@ -70,7 +80,5 @@ func (s *Service) Read(log echo.Logger, filename string) ([]byte, error) {
 	}
 
 	// Return data and log elapsed time.
-	elapsed := time.Since(start)
-	log.Infof("Read file from dropbox. filename=%s, duration=%v", filename, elapsed.Milliseconds())
 	return bs, err
 }
