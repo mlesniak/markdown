@@ -92,8 +92,6 @@ type entry struct {
 
 // Here is a simple DOS attach possible preventing good cache behaviour? Think about this.
 func dropboxUpdate(c echo.Context) error {
-	log := c.Logger()
-
 	// We do not need to check the body since it's an internal application and
 	// you do not need to verify which user account has changed data, since it
 	// was mine by definition.
