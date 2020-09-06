@@ -30,7 +30,6 @@ func handle(c echo.Context) error {
 	// for parent paths (..) etc since we run in a docker container.
 	if filename != "" {
 		virtualPath := staticRoot + filename
-		println(virtualPath)
 		_, err := os.Stat(virtualPath)
 		if err == nil {
 			log.Infof("Serving static virtual file. filename=%s", filename)
