@@ -102,6 +102,10 @@ func dropboxUpdate(c echo.Context) error {
 
 	if cursor == "" {
 		go func() {
+			// Note that try to populate the cache also with non-public entries,
+			// which are then not downloaded, so everything is fine.
+			//
+			// TODO If we have no cursor, maybe use search for #public tag instead of listing all files?
 			argument := struct {
 				Path string `json:"path"`
 			}{
