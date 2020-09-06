@@ -6,7 +6,6 @@ import (
 	"github.com/labstack/gommon/log"
 	"github.com/mlesniak/markdown/pkg/dropbox"
 	"github.com/ziflex/lecho/v2"
-	"io/ioutil"
 	"net/http"
 	"os"
 )
@@ -74,8 +73,6 @@ func main() {
 	e.Logger.Fatal(e.Start(":8080"))
 }
 
-var cursor string
-
 func dropboxChallenge(c echo.Context) error {
 	challenge := c.Request().FormValue("challenge")
 	// Initial dropbox challenge to register webhook.
@@ -85,25 +82,51 @@ func dropboxChallenge(c echo.Context) error {
 	return c.String(http.StatusOK, challenge)
 }
 
-func dropboxUpdate(c echo.Context) error {
-	if cursor == "" {
+var cursor string
 
+// Here is a simple DOS attach possible preventing good cache behaviour? Think about this.
+func dropboxUpdate(c echo.Context) error {
+	// We do not need to check the body since it's an internal application and
+	// you do not need to verify which user account has changed data, since it
+	// was mine by definition.
+	// return c.NoContent(http.StatusOK)
+
+	println("Webhook called")
+
+	// TODO Make these calls asynchronous later on.
+	if cursor == "" {
+		go func() {
+			argument := struct {
+				Path string `json:"path"`
+			}{
+				Path: "/notes",
+			}
+			bs, err := dropboxService.ApiCallBody(c.Logger(), "https://api.dropboxapi.com/2/files/list_folder", argument)
+			if err != nil {
+				println("Ouch " + err.Error())
+				return
+			}
+			println("---")
+			println(string(bs))
+			println("---")
+		}()
+
+		// Simplification: Clear whole cache.
+		// Remember cursor
 	}
+
+	return c.NoContent(http.StatusOK)
 
 	// If we have no cursor, use files/list and update cursor
 	// If we have one, use this one, files/list/continue and update cursor
 
-	// We do not need to check the body since it's an internal application and
-	// you do not need to verify which user account has changed data, since it
-	// was mine by definition.
-
 	// Parse changes and update cache.
-	bs, err := ioutil.ReadAll(c.Request().Body)
-	if err != nil {
-		panic(err)
-	}
-	defer c.Request().Body.Close()
-	println(string(bs))
+	// bs, err := ioutil.ReadAll(c.Request().Body)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// defer c.Request().Body.Close()
+	// println(string(bs))
 
-	return c.NoContent(http.StatusOK)
+	// return c.NoContent(http.StatusOK)
 }
