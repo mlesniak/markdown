@@ -47,9 +47,8 @@ func handle(c echo.Context) error {
 		// Try to read file from dropbox storage.
 		tmp, stop := readFromStorage(c, filename)
 		if stop {
-			// We stop delivery due to some error which was already stored in the
-			// echo context using c.String.
-			return nil
+			// If we should stop, we always return 404 for security reasons.
+			return c.String(http.StatusNotFound, "File not found:"+filename)
 		}
 		html = tmp
 	}
@@ -82,7 +81,6 @@ func readFromStorage(c echo.Context, filename string) (string, bool) {
 	bs, err := dropboxService.Read(c.Logger(), filename)
 	if err != nil {
 		log.Infof("Error reading file: %v for %s", err, filename)
-		_ = c.String(http.StatusNotFound, "File not found:"+filename)
 		return "", true
 	}
 
@@ -91,7 +89,6 @@ func readFromStorage(c echo.Context, filename string) (string, bool) {
 		// We use the same error message to prevent
 		// guessing non-accessible filenames.
 		log.Infof("File not public accessible: %s", filename)
-		_ = c.String(http.StatusNotFound, "File not found:"+filename)
 		return "", true
 	}
 
@@ -107,8 +104,7 @@ func readFromStorage(c echo.Context, filename string) (string, bool) {
 	// If we'll have more variables we'd use proper templating.
 	bsTemplate, err := ioutil.ReadFile("template.html")
 	if err != nil {
-		log.Info("Template not found")
-		_ = c.String(http.StatusInternalServerError, "Template not found. This should never happen.")
+		log.Warn("Template not found. This should never happen.")
 		return "", true
 	}
 	html = strings.ReplaceAll(string(bsTemplate), "${content}", html)
