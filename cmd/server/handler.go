@@ -8,16 +8,15 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"time"
 )
 
 // Move this to own service including dropbox callback etc.
 type cacheEntry struct {
-	name      string
-	createdAt time.Time
-	data      []byte
+	name string
+	data []byte
 }
 
+// TODO Own object / struct / internal package
 var cache = make(map[string]cacheEntry)
 
 // handle is the default handler for all non-static content. It uses the parameter name
@@ -66,18 +65,8 @@ func useCache(c echo.Context, filename string) (string, bool) {
 
 	entry, ok := cache[filename]
 	if ok {
-		// Check TTL
-		maxTTL, _ := time.ParseDuration("60s")
-		validTill := entry.createdAt.Add(maxTTL)
-		if validTill.After(time.Now()) {
-			// Entry still valid.
-			log.Infof("Using cache, validTill=%v. filename=%s", validTill, filename)
-			return string(entry.data), true
-		} else {
-			// Remove from cache.
-			log.Infof("Deleting from cache and retrieving again. filename=%s", filename)
-			delete(cache, filename)
-		}
+		log.Infof("Using cache. filename=%s", filename)
+		return string(entry.data), true
 	}
 
 	return "", false
@@ -127,9 +116,8 @@ func readFromStorage(c echo.Context, filename string) (string, bool) {
 
 	// Add to cache.
 	cache[filename] = cacheEntry{
-		name:      filename,
-		createdAt: time.Now(),
-		data:      []byte(html),
+		name: filename,
+		data: []byte(html),
 	}
 
 	return html, false
