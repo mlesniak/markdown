@@ -1,6 +1,7 @@
 package dropbox
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"io/ioutil"
@@ -42,17 +43,23 @@ func New(token string, rootDirectory string) *Service {
 // Although I miss zerlog's context, e.g. for filenames.
 func (s *Service) Read(log echo.Logger, filename string) ([]byte, error) {
 	start := time.Now()
-	argument := fmt.Sprintf(`{"path": "/%s%s"}`, s.rootDirectory, filename)
+
+	argument := struct {
+		Path string `json:"path"`
+	}{
+		Path: "/" + s.rootDirectory + filename,
+	}
 	bs, err := s.apiCall("files/download", argument)
 	if err != nil {
 		return nil, err
 	}
+
 	log.Infof("Read file from dropbox. filename=%s, duration=%v", filename, time.Since(start).Milliseconds())
 	return bs, err
 }
 
 // apiCall generalizes different api calls to dropbox.
-func (s *Service) apiCall(url string, argument string) ([]byte, error) {
+func (s *Service) apiCall(url string, argument interface{}) ([]byte, error) {
 	// Create general request.
 	client := http.Client{}
 	request, err := http.NewRequest("POST", "https://content.dropboxapi.com/2/"+url, nil)
@@ -60,8 +67,15 @@ func (s *Service) apiCall(url string, argument string) ([]byte, error) {
 		return nil, fmt.Errorf("unable to create request: %s", err)
 	}
 
+	// Create payload.
+	rawJson, err := json.Marshal(argument)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create payload: %s", err)
+	}
+
+	// Set token and payload for submitting.
 	request.Header.Add("Authorization", "Bearer "+s.token)
-	request.Header.Add("Dropbox-API-Arg", argument)
+	request.Header.Add("Dropbox-API-Arg", string(rawJson))
 
 	// Execute request.
 	resp, err := client.Do(request)
