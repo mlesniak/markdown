@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
@@ -93,7 +95,16 @@ func dropboxUpdate(c echo.Context) error {
 
 	println("Webhook called")
 
-	// TODO Make these calls asynchronous later on.
+	type entry struct {
+		Tag  string `json:".tag"`
+		Name string `json:"name"`
+	}
+
+	type entries struct {
+		Entries []entry `json:"entries"`
+		Cursor  string  `json:"cursor"`
+	}
+
 	if cursor == "" {
 		go func() {
 			argument := struct {
@@ -106,27 +117,13 @@ func dropboxUpdate(c echo.Context) error {
 				println("Ouch " + err.Error())
 				return
 			}
-			println("---")
-			println(string(bs))
-			println("---")
+			var es entries
+			json.Unmarshal(bs, &es)
+			fmt.Printf("%v\n", es)
 		}()
 
-		// Simplification: Clear whole cache.
-		// Remember cursor
+		// TODO Remember cursor
 	}
 
 	return c.NoContent(http.StatusOK)
-
-	// If we have no cursor, use files/list and update cursor
-	// If we have one, use this one, files/list/continue and update cursor
-
-	// Parse changes and update cache.
-	// bs, err := ioutil.ReadAll(c.Request().Body)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// defer c.Request().Body.Close()
-	// println(string(bs))
-
-	// return c.NoContent(http.StatusOK)
 }
