@@ -91,10 +91,6 @@ func dropboxUpdate(c echo.Context) error {
 	// We do not need to check the body since it's an internal application and
 	// you do not need to verify which user account has changed data, since it
 	// was mine by definition.
-	// return c.NoContent(http.StatusOK)
-
-	println("Webhook called")
-
 	type entry struct {
 		Tag  string `json:".tag"`
 		Name string `json:"name"`
@@ -120,9 +116,25 @@ func dropboxUpdate(c echo.Context) error {
 			var es entries
 			json.Unmarshal(bs, &es)
 			fmt.Printf("%v\n", es)
+			cursor = es.Cursor
 		}()
-
-		// TODO Remember cursor
+	} else {
+		go func() {
+			argument := struct {
+				Cursor string `json:"cursor"`
+			}{
+				Cursor: cursor,
+			}
+			bs, err := dropboxService.ApiCallBody(c.Logger(), "https://api.dropboxapi.com/2/files/list_folder/continue", argument)
+			if err != nil {
+				println("Ouch " + err.Error())
+				return
+			}
+			var es entries
+			json.Unmarshal(bs, &es)
+			fmt.Printf("%v\n", es)
+			cursor = es.Cursor
+		}()
 	}
 
 	return c.NoContent(http.StatusOK)
