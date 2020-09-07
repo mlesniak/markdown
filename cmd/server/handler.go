@@ -8,16 +8,11 @@ import (
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/mlesniak/markdown/internal/cache"
 )
 
-// Move this to own service including dropbox callback etc.
-type cacheEntry struct {
-	name string
-	data []byte
-}
-
-// TODO Own object / struct / internal package
-var cache = make(map[string]cacheEntry)
+var fileCache = cache.New()
 
 // handle is the default handler for all non-static content. It uses the parameter name
 // to download the correct markdown file from dropbox, perform various transformations
@@ -61,10 +56,10 @@ func handle(c echo.Context) error {
 func useCache(c echo.Context, filename string) (string, bool) {
 	log := c.Logger()
 
-	entry, ok := cache[filename]
+	entry, ok := fileCache.Get(filename)
 	if ok {
 		log.Infof("Using cache. filename=%s", filename)
-		return string(entry.data), true
+		return string(entry), true
 	}
 
 	return "", false
@@ -110,10 +105,10 @@ func readFromStorage(c echo.Context, filename string) (string, bool) {
 	html = strings.ReplaceAll(html, "${title}", titleLine)
 
 	// Add to cache.
-	cache[filename] = cacheEntry{
-		name: filename,
-		data: []byte(html),
-	}
+	fileCache.Add(cache.Entry{
+		Name: filename,
+		Data: []byte(html),
+	})
 
 	return html, false
 }
