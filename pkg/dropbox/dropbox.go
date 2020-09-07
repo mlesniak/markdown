@@ -141,3 +141,14 @@ func (s *Service) ApiCallBody(log echo.Logger, url string, argument interface{})
 	// Return data and log elapsed time.
 	return bs, err
 }
+
+// -----------------------------------------------------------------------------------
+
+func HandleChallenge(c echo.Context) error {
+	challenge := c.Request().FormValue("challenge")
+	// Initial dropbox challenge to register webhook.
+	header := c.Response().Header()
+	header.Add("Content-Type", "text/plain")
+	header.Add("X-Content-Type-Options", "nosniff")
+	return c.String(http.StatusOK, challenge)
+}

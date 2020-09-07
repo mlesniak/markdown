@@ -65,22 +65,13 @@ func main() {
 	e.GET("/:name", handle)
 
 	// Handle cache invalidation through dropbox webhooks.
-	e.GET("/dropbox/webhook", dropboxChallenge)
-	e.POST("/dropbox/webhook", dropboxUpdate)
+	e.GET("/dropbox/webhook", dropbox.HandleChallenge)
+	e.POST("/dropbox/webhook", webhookEndpoint)
 
 	// Start server.
 	e.HideBanner = true
 	e.HidePort = true
 	e.Logger.Fatal(e.Start(":8080"))
-}
-
-func dropboxChallenge(c echo.Context) error {
-	challenge := c.Request().FormValue("challenge")
-	// Initial dropbox challenge to register webhook.
-	header := c.Response().Header()
-	header.Add("Content-Type", "text/plain")
-	header.Add("X-Content-Type-Options", "nosniff")
-	return c.String(http.StatusOK, challenge)
 }
 
 var cursor string
@@ -91,7 +82,7 @@ type entry struct {
 }
 
 // Here is a simple DOS attach possible preventing good cache behaviour? Think about this.
-func dropboxUpdate(c echo.Context) error {
+func webhookEndpoint(c echo.Context) error {
 	// We do not need to check the body since it's an internal application and
 	// you do not need to verify which user account has changed data, since it
 	// was mine by definition.
