@@ -102,7 +102,7 @@ func (s *Service) ApiCallHeader(log echo.Logger, url string, argument interface{
 }
 
 // Consistency is not dropbox's strength, although I understand the idea behind this :-/
-func (s *Service) ApiCallBody(log echo.Logger, url string, argument interface{}) ([]byte, error) {
+func (s *Service) apiCall(log echo.Logger, url string, argument interface{}) ([]byte, error) {
 	// Create payload.
 	rawJson, err := json.Marshal(argument)
 	if err != nil {
@@ -142,13 +142,70 @@ func (s *Service) ApiCallBody(log echo.Logger, url string, argument interface{})
 	return bs, err
 }
 
-// -----------------------------------------------------------------------------------
-
-func HandleChallenge(c echo.Context) error {
+// TODO Documentation
+func (s *Service) HandleChallenge(c echo.Context) error {
 	challenge := c.Request().FormValue("challenge")
 	// Initial dropbox challenge to register webhook.
 	header := c.Response().Header()
 	header.Add("Content-Type", "text/plain")
 	header.Add("X-Content-Type-Options", "nosniff")
 	return c.String(http.StatusOK, challenge)
+}
+
+// -----------------------------------------------------------------------------------
+
+var cursor string
+
+type entry struct {
+	Tag  string `json:".tag"`
+	Name string `json:"name"`
+}
+
+// Here is a simple DOS attach possible preventing good cache behaviour? Think about this.
+func (s *Service) WebhookHandler(c echo.Context) error {
+	// We do not need to check the body since it's an internal application and
+	// you do not need to verify which user account has changed data, since it
+	// was mine by definition.
+	type entries struct {
+		Entries []entry `json:"entries"`
+		Cursor  string  `json:"cursor"`
+	}
+
+	if cursor == "" {
+		go func() {
+			argument := struct {
+				Path string `json:"path"`
+			}{
+				Path: "/notes",
+			}
+			bs, err := s.apiCall(c.Logger(), "https://api.dropboxapi.com/2/files/list_folder", argument)
+			if err != nil {
+				// TODO Handle this
+				println("Ouch " + err.Error())
+				return
+			}
+			var es entries
+			json.Unmarshal(bs, &es)
+			cursor = es.Cursor
+		}()
+	} else {
+		go func() {
+			argument := struct {
+				Cursor string `json:"cursor"`
+			}{
+				Cursor: cursor,
+			}
+			bs, err := s.apiCall(c.Logger(), "https://api.dropboxapi.com/2/files/list_folder/continue", argument)
+			if err != nil {
+				// TODO Handle this
+				println("Ouch " + err.Error())
+				return
+			}
+			var es entries
+			json.Unmarshal(bs, &es)
+			cursor = es.Cursor
+		}()
+	}
+
+	return c.NoContent(http.StatusOK)
 }
