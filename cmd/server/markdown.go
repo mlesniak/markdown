@@ -26,7 +26,14 @@ func convertWikiLinks(markdown string) string {
 		}
 		fileLinkName := matches[1]
 		wikiLink := matches[0]
-		displayedName := strings.SplitN(fileLinkName, " ", 2)[1]
+		// Handle case in which a wikiLink links to a file without a timestamp.
+		filenameParts := strings.SplitN(fileLinkName, " ", 2)
+		var displayedName string
+		if len(filenameParts) < 2 {
+			displayedName = filenameParts[0]
+		} else {
+			displayedName = filenameParts[1]
+		}
 		markdownLink := fmt.Sprintf(`[%s](%s)`, displayedName, fileLinkName)
 		markdown = strings.ReplaceAll(markdown, wikiLink, markdownLink)
 	}
