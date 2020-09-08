@@ -68,5 +68,9 @@ func initDropboxStorage() *dropbox.Service {
 	if dropboxToken == "" {
 		panic("No dropbox token set, aborting.")
 	}
-	return dropbox.New(dropboxToken, "notes/")
+	dropboxAppSecret := os.Getenv("SECRET")
+	if dropboxAppSecret == "" {
+		panic("No dropbox app secret set, aborting.")
+	}
+	return dropbox.New(dropboxAppSecret, dropboxToken, "notes/")
 }

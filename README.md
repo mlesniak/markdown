@@ -21,6 +21,7 @@ This is a custom hacked-together markdown-to-html server for [mlesniak.com](http
 
     # cat markdown.env
     TOKEN=<DROPBOX TOKEN>
+    SECRET=<DROPBOX APP SECRET>
     LOGS_ENABLED=true
 
     docker pull 116.203.24.33:5000/markdown:latest

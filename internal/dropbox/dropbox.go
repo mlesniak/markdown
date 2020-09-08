@@ -2,6 +2,9 @@ package dropbox
 
 import (
 	"bytes"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"github.com/labstack/echo/v4"
@@ -13,6 +16,7 @@ import (
 
 // Service contains the necessary data to access a dropbox.
 type Service struct {
+	appSecret     string
 	token         string
 	rootDirectory string
 	// Since we have only one account, the cursor is part of the service.
@@ -31,12 +35,13 @@ type entry struct {
 // specific application.
 //
 // The rootDirectory is the root for all accessed files.
-func New(token string, rootDirectory string) *Service {
+func New(appSecret, token string, rootDirectory string) *Service {
 	if !strings.HasSuffix(rootDirectory, "/") {
 		rootDirectory = rootDirectory + "/"
 	}
 
 	return &Service{
+		appSecret:     appSecret,
 		token:         token,
 		rootDirectory: rootDirectory,
 	}
@@ -152,6 +157,9 @@ func (s *Service) apiCall(log echo.Logger, url string, argument interface{}) ([]
 // HandleChallenge returns the dropbox challenge which is used to check
 // the webhook dropbox api.
 func (s *Service) HandleChallenge(c echo.Context) error {
+	signature := c.Request().Header.Get("X-Dropbox-Signature")
+	println(signature)
+
 	challenge := c.Request().FormValue("challenge")
 	// Initial dropbox challenge to register webhook.
 	header := c.Response().Header()
@@ -163,6 +171,24 @@ func (s *Service) HandleChallenge(c echo.Context) error {
 // Here is a simple DOS attach possible preventing good cache behaviour? Think about this.
 func (s *Service) WebhookHandler(c echo.Context) error {
 	log := c.Logger()
+
+	// TODO Use a dedicated function.
+	signature := c.Request().Header.Get("X-Dropbox-Signature")
+	mac := hmac.New(sha256.New, []byte(s.appSecret))
+
+	body := c.Request().Body
+	defer body.Close()
+	bs, err := ioutil.ReadAll(body)
+	if err != nil {
+		log.Infof("Error while checking HMAC signature: %s", err.Error())
+		return c.String(http.StatusBadRequest, "Error with HMAC signature")
+	}
+	mac.Write(bs)
+	expectedMac := mac.Sum(nil)
+	validSignature := hex.EncodeToString(expectedMac) == signature
+	log.Infof("validSignature: %v", validSignature)
+	println(hex.EncodeToString(expectedMac))
+	println(signature)
 
 	// We do not need to check the body since it's an internal application and
 	// you do not need to verify which user account has changed data, since it
