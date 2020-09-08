@@ -15,6 +15,13 @@ import (
 type Service struct {
 	token         string
 	rootDirectory string
+	// Since we have only one account, the cursor is part of the service.
+	cursor string
+}
+
+type entry struct {
+	Tag  string `json:".tag"`
+	Name string `json:"name"`
 }
 
 // New returns a new dropbox service.
@@ -142,7 +149,8 @@ func (s *Service) apiCall(log echo.Logger, url string, argument interface{}) ([]
 	return bs, err
 }
 
-// TODO Documentation
+// HandleChallenge returns the dropbox challenge which is used to check
+// the webhook dropbox api.
 func (s *Service) HandleChallenge(c echo.Context) error {
 	challenge := c.Request().FormValue("challenge")
 	// Initial dropbox challenge to register webhook.
@@ -150,15 +158,6 @@ func (s *Service) HandleChallenge(c echo.Context) error {
 	header.Add("Content-Type", "text/plain")
 	header.Add("X-Content-Type-Options", "nosniff")
 	return c.String(http.StatusOK, challenge)
-}
-
-// -----------------------------------------------------------------------------------
-
-var cursor string
-
-type entry struct {
-	Tag  string `json:".tag"`
-	Name string `json:"name"`
 }
 
 // Here is a simple DOS attach possible preventing good cache behaviour? Think about this.
@@ -171,7 +170,7 @@ func (s *Service) WebhookHandler(c echo.Context) error {
 		Cursor  string  `json:"cursor"`
 	}
 
-	if cursor == "" {
+	if s.cursor == "" {
 		go func() {
 			argument := struct {
 				Path string `json:"path"`
@@ -186,14 +185,14 @@ func (s *Service) WebhookHandler(c echo.Context) error {
 			}
 			var es entries
 			json.Unmarshal(bs, &es)
-			cursor = es.Cursor
+			s.cursor = es.Cursor
 		}()
 	} else {
 		go func() {
 			argument := struct {
 				Cursor string `json:"cursor"`
 			}{
-				Cursor: cursor,
+				Cursor: s.cursor,
 			}
 			bs, err := s.apiCall(c.Logger(), "https://api.dropboxapi.com/2/files/list_folder/continue", argument)
 			if err != nil {
@@ -203,7 +202,7 @@ func (s *Service) WebhookHandler(c echo.Context) error {
 			}
 			var es entries
 			json.Unmarshal(bs, &es)
-			cursor = es.Cursor
+			s.cursor = es.Cursor
 		}()
 	}
 
