@@ -1,9 +1,17 @@
-package main
+package handler
 
 import (
 	"fmt"
 	"regexp"
 	"strings"
+)
+
+const (
+	// Default title if the title can not be extracted from the markdown file.
+	defaultTitle = "mlesniak.com"
+
+	// Tag name to define markdown files which are allowed to be published.
+	publishTag = "#public"
 )
 
 // processRawMarkdown performs various conversion steps which are not supported by

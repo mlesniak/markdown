@@ -1,4 +1,4 @@
-package main
+package handler
 
 import (
 	"bytes"
@@ -12,12 +12,28 @@ import (
 	"github.com/mlesniak/markdown/internal/cache"
 )
 
+const (
+	// Directory containing static files for website.
+	staticRoot = "static/"
+)
+
+// StorageReader allows to read data from an abstract storage.
+type StorageReader interface {
+	// Implemented by the dropbox interface.
+	Read(log echo.Logger, filename string) ([]byte, error)
+}
+
+type Handler struct {
+	RootFilename  string
+	StorageReader StorageReader
+}
+
 var fileCache = cache.New()
 
-// handle is the default handler for all non-static content. It uses the parameter name
+// Handle is the default handler for all non-static content. It uses the parameter name
 // to download the correct markdown file from dropbox, perform various transformations
 // and convert it to html.
-func handle(c echo.Context) error {
+func (h *Handler) Handle(c echo.Context) error {
 	log := c.Logger()
 	filename := c.Param("name")
 
@@ -33,13 +49,13 @@ func handle(c echo.Context) error {
 	}
 
 	// Append markdown suffix and handle / - path.
-	filename = fixFilename(filename)
+	filename = h.fixFilename(filename)
 
 	// Check if the file is in cache and can be used.
-	html, found := useCache(c, filename)
+	html, found := useCache(log, filename)
 	if !found {
 		// Try to read file from dropbox storage.
-		tmp, stop := readFromStorage(c, filename)
+		tmp, stop := h.readFromStorage(c, filename)
 		if stop {
 			// If we should stop, we always return 404 for security reasons.
 			return c.String(http.StatusNotFound, "File not found:"+filename)
@@ -53,9 +69,7 @@ func handle(c echo.Context) error {
 }
 
 // useCache tries to use the cache entry to serve a precomputed and stored file.
-func useCache(c echo.Context, filename string) (string, bool) {
-	log := c.Logger()
-
+func useCache(log echo.Logger, filename string) (string, bool) {
 	entry, ok := fileCache.Get(filename)
 	if ok {
 		log.Infof("Using cache. filename=%s", filename)
@@ -68,11 +82,11 @@ func useCache(c echo.Context, filename string) (string, bool) {
 // readFromStorage reads the given file from dropbox. If there is an error,
 // true is returned and an error message is stored in the return value of
 // the context, i.e. with c.String(...).
-func readFromStorage(c echo.Context, filename string) (string, bool) {
+func (h *Handler) readFromStorage(c echo.Context, filename string) (string, bool) {
 	log := c.Logger()
 
 	// Read file from dropbox.
-	bs, err := dropboxService.Read(c.Logger(), filename)
+	bs, err := h.StorageReader.Read(c.Logger(), filename)
 	if err != nil {
 		log.Infof("Error reading file: %v for %s", err, filename)
 		return "", true
@@ -122,10 +136,10 @@ func isPublic(bs []byte) bool {
 
 // fixFilename transform the requested filename, i.e. redirects to
 // index page or fixes simplified filenames without suffix.
-func fixFilename(filename string) string {
+func (h *Handler) fixFilename(filename string) string {
 	// If / is requested we redirect to our index page.
 	if filename == "" {
-		filename = rootFilename
+		filename = h.RootFilename
 	}
 
 	// In our markup, wiki links have no markdown suffix.
