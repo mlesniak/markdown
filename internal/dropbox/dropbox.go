@@ -162,6 +162,8 @@ func (s *Service) HandleChallenge(c echo.Context) error {
 
 // Here is a simple DOS attach possible preventing good cache behaviour? Think about this.
 func (s *Service) WebhookHandler(c echo.Context) error {
+	log := c.Logger()
+
 	// We do not need to check the body since it's an internal application and
 	// you do not need to verify which user account has changed data, since it
 	// was mine by definition.
@@ -179,8 +181,7 @@ func (s *Service) WebhookHandler(c echo.Context) error {
 			}
 			bs, err := s.apiCall(c.Logger(), "https://api.dropboxapi.com/2/files/list_folder", argument)
 			if err != nil {
-				// TODO Handle this
-				println("Ouch " + err.Error())
+				log.Infof("Error in initial dropbox call: %s", err.Error())
 				return
 			}
 			var es entries
@@ -196,8 +197,7 @@ func (s *Service) WebhookHandler(c echo.Context) error {
 			}
 			bs, err := s.apiCall(c.Logger(), "https://api.dropboxapi.com/2/files/list_folder/continue", argument)
 			if err != nil {
-				// TODO Handle this
-				println("Ouch " + err.Error())
+				log.Infof("Error in continuous dropbox call for listing: %s", err.Error())
 				return
 			}
 			var es entries
