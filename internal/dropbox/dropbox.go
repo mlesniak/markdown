@@ -172,23 +172,8 @@ func (s *Service) HandleChallenge(c echo.Context) error {
 func (s *Service) WebhookHandler(c echo.Context) error {
 	log := c.Logger()
 
-	// TODO Use a dedicated function.
-	signature := c.Request().Header.Get("X-Dropbox-Signature")
-	mac := hmac.New(sha256.New, []byte(s.appSecret))
-
-	body := c.Request().Body
-	defer body.Close()
-	bs, err := ioutil.ReadAll(body)
-	if err != nil {
-		log.Infof("Error while checking HMAC signature: %s", err.Error())
-		return c.String(http.StatusBadRequest, "Error with HMAC signature")
-	}
-	mac.Write(bs)
-	expectedMac := mac.Sum(nil)
-	validSignature := hex.EncodeToString(expectedMac) == signature
-	log.Infof("validSignature: %v", validSignature)
-	println(hex.EncodeToString(expectedMac))
-	println(signature)
+	// TODO Continue work on this.
+	s.checkSignature(c, log)
 
 	// We do not need to check the body since it's an internal application and
 	// you do not need to verify which user account has changed data, since it
@@ -233,4 +218,25 @@ func (s *Service) WebhookHandler(c echo.Context) error {
 	}
 
 	return c.NoContent(http.StatusOK)
+}
+
+func (s *Service) checkSignature(c echo.Context, log echo.Logger) (error, bool) {
+	// TODO Use a dedicated function.
+	signature := c.Request().Header.Get("X-Dropbox-Signature")
+	mac := hmac.New(sha256.New, []byte(s.appSecret))
+
+	body := c.Request().Body
+	defer body.Close()
+	bs, err := ioutil.ReadAll(body)
+	if err != nil {
+		log.Infof("Error while checking HMAC signature: %s", err.Error())
+		return c.String(http.StatusBadRequest, "Error with HMAC signature"), true
+	}
+	mac.Write(bs)
+	expectedMac := mac.Sum(nil)
+	validSignature := hex.EncodeToString(expectedMac) == signature
+	log.Infof("validSignature: %v", validSignature)
+	println(hex.EncodeToString(expectedMac))
+	println(signature)
+	return nil, false
 }
