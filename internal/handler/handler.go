@@ -91,8 +91,13 @@ func (h *Handler) readFromStorage(c echo.Context, filename string) (string, bool
 		return "", true
 	}
 
+	return h.RenderFile(log, filename, bs)
+}
+
+// TODO Codepath is getting a bit obscure, refactor this.
+func (h *Handler) RenderFile(log echo.Logger, filename string, data []byte) (string, bool) {
 	// Are we allowed to display this file?
-	if !isPublic(bs) {
+	if !isPublic(data) {
 		// We use the same error message to prevent
 		// guessing non-accessible filenames.
 		log.Infof("File not public accessible: %s", filename)
@@ -100,7 +105,7 @@ func (h *Handler) readFromStorage(c echo.Context, filename string) (string, bool
 	}
 
 	// Perform various pre-processing steps on the markdown.
-	markdown := processRawMarkdown(bs)
+	markdown := processRawMarkdown(data)
 	titleLine := computeTitle(markdown)
 
 	// Convert from (processed) markdown to html.

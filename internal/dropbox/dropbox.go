@@ -28,7 +28,7 @@ type entry struct {
 	Name string `json:"name"`
 }
 
-type Updater func(filename string, data []byte)
+type Updater func(log echo.Logger, filename string, data []byte)
 
 // New returns a new dropbox service.
 //
@@ -247,12 +247,13 @@ func (s *Service) checkSignature(c echo.Context, log echo.Logger) (error, bool) 
 	return nil, false
 }
 
+// TODO Use log instead of context
 func (s *Service) performCacheUpdate(c echo.Context, entries []entry, updater Updater) {
 	log := c.Logger()
 
 	for _, e := range entries {
 		log.Infof("Updating cache entry. filename=%s", e.Name)
 		bs, _ := s.Read(c.Logger(), e.Name)
-		updater(e.Name, bs)
+		updater(log, e.Name, bs)
 	}
 }

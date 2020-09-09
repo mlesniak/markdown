@@ -56,11 +56,8 @@ func main() {
 
 	// Handle cache invalidation through dropbox webhooks.
 	e.GET("/dropbox/webhook", dropboxService.HandleChallenge)
-	e.POST("/dropbox/webhook", dropboxService.WebhookHandler(func(filename string, data []byte) {
-		cacheService.Add(cache.Entry{
-			Name: filename,
-			Data: data,
-		})
+	e.POST("/dropbox/webhook", dropboxService.WebhookHandler(func(log echo.Logger, filename string, data []byte) {
+		h.RenderFile(log, filename, data)
 	}))
 
 	// Start server.
