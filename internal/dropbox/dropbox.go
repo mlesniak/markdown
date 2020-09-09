@@ -227,7 +227,6 @@ func (s *Service) WebhookHandler(updater Updater) echo.HandlerFunc {
 }
 
 func (s *Service) checkSignature(c echo.Context, log echo.Logger) (error, bool) {
-	// TODO Use a dedicated function.
 	signature := c.Request().Header.Get("X-Dropbox-Signature")
 	mac := hmac.New(sha256.New, []byte(s.appSecret))
 
@@ -240,6 +239,7 @@ func (s *Service) checkSignature(c echo.Context, log echo.Logger) (error, bool) 
 	}
 	mac.Write(bs)
 	expectedMac := mac.Sum(nil)
+	// TODO Use hex.DecodeFromString and use hmac.Equals
 	validSignature := hex.EncodeToString(expectedMac) == signature
 	log.Infof("validSignature: %v", validSignature)
 	println(hex.EncodeToString(expectedMac))
