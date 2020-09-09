@@ -26,9 +26,8 @@ type StorageReader interface {
 type Handler struct {
 	RootFilename  string
 	StorageReader StorageReader
+	Cache         *cache.Cache
 }
-
-var fileCache = cache.New()
 
 // Handle is the default handler for all non-static content. It uses the parameter name
 // to download the correct markdown file from dropbox, perform various transformations
@@ -52,7 +51,7 @@ func (h *Handler) Handle(c echo.Context) error {
 	filename = h.fixFilename(filename)
 
 	// Check if the file is in cache and can be used.
-	html, found := useCache(log, filename)
+	html, found := h.useCache(log, filename)
 	if !found {
 		// Try to read file from dropbox storage.
 		tmp, stop := h.readFromStorage(c, filename)
@@ -69,8 +68,8 @@ func (h *Handler) Handle(c echo.Context) error {
 }
 
 // useCache tries to use the cache entry to serve a precomputed and stored file.
-func useCache(log echo.Logger, filename string) (string, bool) {
-	entry, ok := fileCache.Get(filename)
+func (h *Handler) useCache(log echo.Logger, filename string) (string, bool) {
+	entry, ok := h.Cache.Get(filename)
 	if ok {
 		log.Infof("Using cache. filename=%s", filename)
 		return string(entry), true
@@ -119,7 +118,7 @@ func (h *Handler) readFromStorage(c echo.Context, filename string) (string, bool
 	html = strings.ReplaceAll(html, "${title}", titleLine)
 
 	// Add to cache.
-	fileCache.Add(cache.Entry{
+	h.Cache.Add(cache.Entry{
 		Name: filename,
 		Data: []byte(html),
 	})

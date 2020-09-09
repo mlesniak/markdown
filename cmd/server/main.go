@@ -4,6 +4,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
+	"github.com/mlesniak/markdown/internal/cache"
 	"github.com/mlesniak/markdown/internal/dropbox"
 	"github.com/mlesniak/markdown/internal/handler"
 	"github.com/ziflex/lecho/v2"
@@ -32,6 +33,7 @@ func main() {
 
 	// Initialize services.
 	dropboxService := initDropboxStorage()
+	cacheService := cache.New()
 
 	// Configure middlewares.
 	e.Use(middleware.RequestID())
@@ -47,13 +49,19 @@ func main() {
 	h := handler.Handler{
 		RootFilename:  "202009010520 index",
 		StorageReader: dropboxService,
+		Cache:         cacheService,
 	}
 	e.GET("/", h.Handle)
 	e.GET("/:name", h.Handle)
 
 	// Handle cache invalidation through dropbox webhooks.
 	e.GET("/dropbox/webhook", dropboxService.HandleChallenge)
-	e.POST("/dropbox/webhook", dropboxService.WebhookHandler)
+	e.POST("/dropbox/webhook", dropboxService.WebhookHandler(func(filename string, data []byte) {
+		cacheService.Add(cache.Entry{
+			Name: filename,
+			Data: data,
+		})
+	}))
 
 	// Start server.
 	e.HideBanner = true

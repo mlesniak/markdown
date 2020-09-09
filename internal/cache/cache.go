@@ -1,8 +1,8 @@
-// A simple cache abstraction. Is this actually feasible in Go or
+// A simple Cache abstraction. Is this actually feasible in Go or
 // a we over-engineering a simple map structure?
 package cache
 
-// CacheEntry describes a cache entry.
+// CacheEntry describes a Cache entry.
 type Entry struct {
 	Name string
 	Data []byte
@@ -14,9 +14,10 @@ type Cache struct {
 
 func New() *Cache {
 	c := make(map[string]Entry)
-	return &Cache{
+	ch := Cache{
 		cache: c,
 	}
+	return &ch
 }
 
 func (c *Cache) Add(entry Entry) {
@@ -29,8 +30,4 @@ func (c *Cache) Get(name string) ([]byte, bool) {
 		return nil, false
 	}
 	return entry.Data, true
-}
-
-func (c *Cache) Delete(name string) {
-	delete(c.cache, name)
 }
