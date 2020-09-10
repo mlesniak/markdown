@@ -27,13 +27,9 @@ func (h *Handler) Handle(c echo.Context) error {
 
 	// Check if filename exists in static root directory. This is secure without checking
 	// for parent paths (..) etc since we run in a docker container.
-	if filename != "" {
-		virtualPath := staticRoot + filename
-		_, err := os.Stat(virtualPath)
-		if err == nil {
-			log.Infof("Serving static virtual file. filename=%s", filename)
-			return c.File(virtualPath)
-		}
+	ok := h.serveStaticFile(c, filename)
+	if ok {
+		return nil
 	}
 
 	// Append markdown suffix and handle / - path.
@@ -54,6 +50,23 @@ func (h *Handler) Handle(c echo.Context) error {
 	// Return generated HTML file with correct content type.
 	c.Response().Header().Add("Content-Type", "text/html; charset=UTF-8")
 	return c.String(http.StatusOK, html)
+}
+
+// serveStaticFile is a special handler to service static files in the root directory
+// which are actually stored in the static folder.
+func (h *Handler) serveStaticFile(c echo.Context, filename string) bool {
+	log := c.Logger()
+
+	if filename != "" {
+		virtualPath := staticRoot + filename
+		_, err := os.Stat(virtualPath)
+		if err == nil {
+			log.Infof("Serving static virtual file. filename=%s", filename)
+			c.File(virtualPath)
+			return true
+		}
+	}
+	return false
 }
 
 // useCache tries to use the cache entry to serve a precomputed and stored file.
