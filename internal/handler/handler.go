@@ -1,27 +1,16 @@
 package handler
 
 import (
-	"bytes"
 	"github.com/labstack/echo/v4"
-	"github.com/russross/blackfriday/v2"
-	"io/ioutil"
+	"github.com/mlesniak/markdown/internal/cache"
 	"net/http"
 	"os"
-	"strings"
-
-	"github.com/mlesniak/markdown/internal/cache"
 )
 
 const (
 	// Directory containing static files for website.
 	staticRoot = "static/"
 )
-
-// StorageReader allows to read data from an abstract storage.
-type StorageReader interface {
-	// Implemented by the dropbox interface.
-	Read(log echo.Logger, filename string) ([]byte, error)
-}
 
 type Handler struct {
 	RootFilename  string
@@ -76,81 +65,4 @@ func (h *Handler) useCache(log echo.Logger, filename string) (string, bool) {
 	}
 
 	return "", false
-}
-
-// readFromStorage reads the given file from dropbox. If there is an error,
-// true is returned and an error message is stored in the return value of
-// the context, i.e. with c.String(...).
-func (h *Handler) readFromStorage(c echo.Context, filename string) (string, bool) {
-	log := c.Logger()
-
-	// Read file from dropbox.
-	bs, err := h.StorageReader.Read(c.Logger(), filename)
-	if err != nil {
-		log.Infof("Error reading file: %v for %s", err, filename)
-		return "", true
-	}
-
-	return h.RenderFile(log, filename, bs)
-}
-
-// TODO Codepath is getting a bit obscure, refactor this.
-func (h *Handler) RenderFile(log echo.Logger, filename string, data []byte) (string, bool) {
-	// Are we allowed to display this file?
-	if !isPublic(data) {
-		// We use the same error message to prevent
-		// guessing non-accessible filenames.
-		log.Infof("File not public accessible: %s", filename)
-		return "", true
-	}
-
-	// Perform various pre-processing steps on the markdown.
-	markdown := processRawMarkdown(data)
-	titleLine := computeTitle(markdown)
-
-	// Convert from (processed) markdown to html.
-	renderer := blackfriday.NewHTMLRenderer(blackfriday.HTMLRendererParameters{})
-	html := string(blackfriday.Run([]byte(markdown), blackfriday.WithRenderer(renderer)))
-
-	// Inject rendered html into template and fill variables.
-	// If we'll have more variables we'd use proper templating.
-	bsTemplate, err := ioutil.ReadFile("template.html")
-	if err != nil {
-		log.Warn("Template not found. This should never happen.")
-		return "", true
-	}
-	html = strings.ReplaceAll(string(bsTemplate), "${content}", html)
-	html = strings.ReplaceAll(html, "${title}", titleLine)
-
-	// Add to cache.
-	h.Cache.Add(cache.Entry{
-		Name: filename,
-		Data: []byte(html),
-	})
-
-	return html, false
-}
-
-// isPublic checks if a file is allowed to be displayed: Since we are only
-// downloading markdown files, we enforce that all files must contain the tag
-// `publishTag` to be able to download it.
-func isPublic(bs []byte) bool {
-	return bytes.Contains(bs, []byte(publishTag))
-}
-
-// fixFilename transform the requested filename, i.e. redirects to
-// index page or fixes simplified filenames without suffix.
-func (h *Handler) fixFilename(filename string) string {
-	// If / is requested we redirect to our index page.
-	if filename == "" {
-		filename = h.RootFilename
-	}
-
-	// In our markup, wiki links have no markdown suffix.
-	// Append suffix if not yet present.
-	if !strings.HasSuffix(filename, ".md") {
-		filename = filename + ".md"
-	}
-
-	return filename
 }
