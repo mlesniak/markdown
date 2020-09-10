@@ -13,9 +13,8 @@ type Cache struct {
 }
 
 func New() *Cache {
-	c := make(map[string]Entry)
 	ch := Cache{
-		cache: c,
+		cache: make(map[string]Entry),
 	}
 	return &ch
 }
