@@ -159,9 +159,6 @@ func (s *Service) apiCall(log echo.Logger, url string, argument interface{}) ([]
 // HandleChallenge returns the dropbox challenge which is used to check
 // the webhook dropbox api.
 func (s *Service) HandleChallenge(c echo.Context) error {
-	signature := c.Request().Header.Get("X-Dropbox-Signature")
-	println(signature)
-
 	challenge := c.Request().FormValue("challenge")
 	// Initial dropbox challenge to register webhook.
 	header := c.Response().Header()
@@ -173,11 +170,12 @@ func (s *Service) HandleChallenge(c echo.Context) error {
 // Here is a simple DOS attach possible preventing good cache behaviour? Think about this.
 func (s *Service) WebhookHandler(updater Updater) echo.HandlerFunc {
 	return func(c echo.Context) error {
-
 		log := c.Logger()
 
-		// TODO Continue work on this.
-		s.checkSignature(c, log)
+		// Check signature for file updates to prevent DoS attacks.
+		if !s.validSignature(c) {
+			return c.String(http.StatusBadRequest, "Error with HMAC signature")
+		}
 
 		// We do not need to check the body since it's an internal application and
 		// you do not need to verify which user account has changed data, since it
@@ -217,7 +215,7 @@ func (s *Service) WebhookHandler(updater Updater) echo.HandlerFunc {
 				}
 				var es entries
 				json.Unmarshal(bs, &es)
-				s.performCacheUpdate(c, es.Entries, updater)
+				s.performCacheUpdate(log, es.Entries, updater)
 				s.cursor = es.Cursor
 			}()
 		}
@@ -226,34 +224,35 @@ func (s *Service) WebhookHandler(updater Updater) echo.HandlerFunc {
 	}
 }
 
-func (s *Service) checkSignature(c echo.Context, log echo.Logger) (error, bool) {
-	signature := c.Request().Header.Get("X-Dropbox-Signature")
-	mac := hmac.New(sha256.New, []byte(s.appSecret))
+func (s *Service) validSignature(c echo.Context) bool {
+	log := c.Logger()
 
+	// In out case we do not need the body elsewhere and can read it fully.
 	body := c.Request().Body
 	defer body.Close()
 	bs, err := ioutil.ReadAll(body)
 	if err != nil {
 		log.Infof("Error while checking HMAC signature: %s", err.Error())
-		return c.String(http.StatusBadRequest, "Error with HMAC signature"), true
+		return false
 	}
+
+	// Compute expected signature.
+	mac := hmac.New(sha256.New, []byte(s.appSecret))
 	mac.Write(bs)
-	expectedMac := mac.Sum(nil)
-	// TODO Use hex.DecodeFromString and use hmac.Equals
-	validSignature := hex.EncodeToString(expectedMac) == signature
-	log.Infof("validSignature: %v", validSignature)
-	println(hex.EncodeToString(expectedMac))
-	println(signature)
-	return nil, false
+	expectedMAC := mac.Sum(nil)
+
+	// Convert actual signature.
+	signature := c.Request().Header.Get("X-Dropbox-Signature")
+	submittedMAC, err := hex.DecodeString(signature)
+
+	// Compare.
+	return hmac.Equal(submittedMAC, expectedMAC)
 }
 
-// TODO Use log instead of context
-func (s *Service) performCacheUpdate(c echo.Context, entries []entry, updater Updater) {
-	log := c.Logger()
-
+func (s *Service) performCacheUpdate(log echo.Logger, entries []entry, updater Updater) {
 	for _, e := range entries {
 		log.Infof("Updating cache entry. filename=%s", e.Name)
-		bs, _ := s.Read(c.Logger(), e.Name)
+		bs, _ := s.Read(log, e.Name)
 		updater(log, e.Name, bs)
 	}
 }
