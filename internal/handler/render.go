@@ -36,14 +36,7 @@ func (h *Handler) RenderFile(log echo.Logger, filename string, data []byte) (str
 	}
 	html = strings.ReplaceAll(string(bsTemplate), "${content}", html)
 	html = strings.ReplaceAll(html, "${title}", titleLine)
-
-	// TODO function
-	buildInformation := os.Getenv("COMMIT")
-	buildInformation = strings.Trim(buildInformation, " \n")
-	if buildInformation == "" {
-		buildInformation = "not available"
-	}
-	html = strings.ReplaceAll(html, "${build}", buildInformation)
+	html = strings.ReplaceAll(html, "${build}", buildInformation())
 
 	// Add to cache.
 	h.Cache.Add(cache.Entry{
@@ -52,6 +45,15 @@ func (h *Handler) RenderFile(log echo.Logger, filename string, data []byte) (str
 	})
 
 	return html, false
+}
+
+func buildInformation() string {
+	buildInformation := os.Getenv("COMMIT")
+	buildInformation = strings.Trim(buildInformation, " \n")
+	if buildInformation == "" {
+		buildInformation = "not available"
+	}
+	return buildInformation
 }
 
 // isPublic checks if a file is allowed to be displayed: Since we are only
