@@ -39,6 +39,7 @@ func (h *Handler) RenderFile(log echo.Logger, filename string, data []byte) (str
 
 	// TODO function
 	buildInformation := os.Getenv("COMMIT")
+	buildInformation = strings.Trim(buildInformation, " \n")
 	if buildInformation == "" {
 		buildInformation = "not available"
 	}
