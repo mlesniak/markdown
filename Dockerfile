@@ -6,6 +6,8 @@ RUN go mod download
 RUN go build -o markdown cmd/server/*.go
 
 FROM alpine:latest
+ARG COMMIT
+ENV COMMIT ${COMMIT}
 WORKDIR /data
 ADD data .
 COPY --from=0 /markdown/markdown /markdown/server

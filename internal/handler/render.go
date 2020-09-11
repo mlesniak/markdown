@@ -6,6 +6,7 @@ import (
 	"github.com/mlesniak/markdown/internal/cache"
 	"github.com/russross/blackfriday/v2"
 	"io/ioutil"
+	"os"
 	"strings"
 )
 
@@ -35,6 +36,13 @@ func (h *Handler) RenderFile(log echo.Logger, filename string, data []byte) (str
 	}
 	html = strings.ReplaceAll(string(bsTemplate), "${content}", html)
 	html = strings.ReplaceAll(html, "${title}", titleLine)
+
+	// TODO function
+	buildInformation := os.Getenv("COMMIT")
+	if buildInformation == "" {
+		buildInformation = "not available"
+	}
+	html = strings.ReplaceAll(html, "${build}", buildInformation)
 
 	// Add to cache.
 	h.Cache.Add(cache.Entry{

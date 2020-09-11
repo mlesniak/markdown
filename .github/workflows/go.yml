@@ -20,6 +20,8 @@ jobs:
         password: ${{ secrets.DOCKER_PASSWORD }}
         repository: mlesniak/markdown
         tags: latest
+        build-args:
+          - COMMIT: ${GITHUB_SHA}
 
     - name: Pull, stop and restart
       uses: alinz/ssh-scp-action@master
