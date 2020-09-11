@@ -21,7 +21,7 @@ jobs:
         repository: mlesniak/markdown
         tags: latest
         build_args: |
-          COMMIT: ${{ github.sha }}
+          COMMIT=${{ github.sha }}
 
     - name: Pull, stop and restart
       uses: alinz/ssh-scp-action@master
