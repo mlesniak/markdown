@@ -9,7 +9,6 @@ import (
 	"github.com/mlesniak/markdown/internal/handler"
 	"github.com/ziflex/lecho/v2"
 	"os"
-	"strings"
 )
 
 const (
@@ -21,7 +20,6 @@ const (
 )
 
 func main() {
-	bi := getBuildInformation()
 	e := echo.New()
 
 	// Configure logging.
@@ -30,7 +28,7 @@ func main() {
 		lecho.WithLevel(log.INFO),
 		lecho.WithTimestamp(),
 		lecho.WithCallerWithSkipFrameCount(3),
-		lecho.WithField("commit", bi.commit),
+		lecho.WithField("commit", handler.BuildInformation()),
 	)
 	e.Logger = logger
 
@@ -39,6 +37,7 @@ func main() {
 	cacheService := cache.New()
 
 	// Configure middlewares.
+	e.Use(handler.BuildVersionHeader())
 	e.Use(middleware.RequestID())
 	e.Use(lecho.Middleware(lecho.Config{
 		Logger: logger,
@@ -81,21 +80,4 @@ func initDropboxStorage() *dropbox.Service {
 		panic("No dropbox app secret set, aborting.")
 	}
 	return dropbox.New(dropboxAppSecret, dropboxToken, "notes/")
-}
-
-type buildInformation struct {
-	commit string
-}
-
-// buildInformation returns a string with commit hash and build time.
-func getBuildInformation() buildInformation {
-	commit := os.Getenv("COMMIT")
-	commit = strings.Trim(commit, " \n")
-	if commit == "" {
-		commit = "not available"
-	}
-
-	return buildInformation{
-		commit: commit,
-	}
 }
