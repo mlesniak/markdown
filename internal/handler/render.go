@@ -20,7 +20,7 @@ func (h *Handler) RenderFile(log echo.Logger, filename string, data []byte) (str
 	}
 
 	// Perform various pre-processing steps on the markdown.
-	markdown := processRawMarkdown(data)
+	markdown := processRawMarkdown(h.Tags, filename, data)
 	titleLine := computeTitle(markdown)
 
 	// Convert from (processed) markdown to html.

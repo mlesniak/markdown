@@ -7,6 +7,7 @@ import (
 	"github.com/mlesniak/markdown/internal/cache"
 	"github.com/mlesniak/markdown/internal/dropbox"
 	"github.com/mlesniak/markdown/internal/handler"
+	"github.com/mlesniak/markdown/internal/tags"
 	"github.com/ziflex/lecho/v2"
 	"os"
 )
@@ -36,11 +37,11 @@ func main() {
 
 	// Initialize services.
 	dropboxService := initDropboxStorage()
-	cacheService := cache.New()
 	handlerService := handler.Handler{
 		RootFilename:  rootFilename,
 		StorageReader: dropboxService,
-		Cache:         cacheService,
+		Cache:         cache.New(),
+		Tags:          tags.New(),
 	}
 
 	// Preload files.
@@ -62,6 +63,7 @@ func main() {
 
 	// Serve dynamic files.
 	e.GET("/", handlerService.Handle)
+	e.GET("/tag/:tag", handlerService.HandleTag)
 	e.GET("/:name", handlerService.Handle)
 
 	// Handle cache invalidation through dropbox webhooks.

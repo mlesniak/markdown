@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"github.com/mlesniak/markdown/internal/tags"
 	"regexp"
 	"strings"
 )
@@ -17,9 +18,9 @@ const (
 // processRawMarkdown performs various conversion steps which are not supported by
 // the markdown processor. In addition, it uses the first line of the file to compute
 // a potential title.
-func processRawMarkdown(rawMarkdown []byte) string {
+func processRawMarkdown(tags *tags.Tags, filename string, rawMarkdown []byte) string {
 	markdown := string(rawMarkdown)
-	markdown = removeTags(markdown)
+	markdown = processTags(tags, filename, markdown)
 	markdown = convertWikiLinks(markdown)
 	return markdown
 }
@@ -49,15 +50,28 @@ func convertWikiLinks(markdown string) string {
 	return markdown
 }
 
-// removeTags removes all tags from the file.
-func removeTags(markdown string) string {
-	regex := regexp.MustCompile(`[\s]?#\w+`)
+// processTags removes all tags from the file.
+func processTags(tags *tags.Tags, filename, markdown string) string {
+	regex := regexp.MustCompile(` *(#\w+)`)
 	matches := regex.FindAllString(markdown, -1)
-	for _, match := range matches {
-		if match != "" {
-			markdown = strings.ReplaceAll(markdown, match, "")
+
+	empty := struct{}{}
+	fileTags := make(map[string]struct{})
+
+	for _, tag := range matches {
+		if tag != "" {
+			// TODO Replace with link to tag overview.
+			// markdown = strings.ReplaceAll(markdown, tag, "")
+
+			// Triming is easier than using the matcher's group.
+			tag = strings.Trim(tag, " \n\r\t")
+			fileTags[tag] = empty
+			println(filename + "; TAG: <" + tag + ">")
 		}
 	}
+
+	tags.Update(filename, fileTags)
+
 	return markdown
 }
 

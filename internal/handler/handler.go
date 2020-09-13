@@ -3,6 +3,7 @@ package handler
 import (
 	"github.com/labstack/echo/v4"
 	"github.com/mlesniak/markdown/internal/cache"
+	"github.com/mlesniak/markdown/internal/tags"
 	"net/http"
 	"os"
 )
@@ -16,6 +17,7 @@ type Handler struct {
 	RootFilename  string
 	StorageReader StorageReader
 	Cache         *cache.Cache
+	Tags          *tags.Tags
 }
 
 // Handle is the default handler for all non-static content. It uses the parameter name
@@ -78,4 +80,11 @@ func (h *Handler) useCache(log echo.Logger, filename string) (string, bool) {
 	}
 
 	return "", false
+}
+
+func (h *Handler) HandleTag(c echo.Context) error {
+	tag := c.Param("tag")
+	tag = "#" + tag
+	fileList := h.Tags.List(tag)
+	return c.JSON(http.StatusOK, fileList)
 }
