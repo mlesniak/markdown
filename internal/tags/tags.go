@@ -1,5 +1,7 @@
 package tags
 
+import "strings"
+
 type tags = map[string]struct{}
 
 type Tags struct {
@@ -13,6 +15,11 @@ func New() *Tags {
 }
 
 func (t *Tags) Update(filename string, tags tags) {
+	// Ignore adding tags.
+	if strings.HasPrefix(filename, "#") {
+		return
+	}
+
 	t.tags[filename] = tags
 }
 

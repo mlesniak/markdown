@@ -50,7 +50,7 @@ func convertWikiLinks(markdown string) string {
 	return markdown
 }
 
-// processTags removes all tags from the file.
+// processTags ...
 func processTags(tags *tags.Tags, filename, markdown string) string {
 	regex := regexp.MustCompile(` *(#\w+)`)
 	matches := regex.FindAllString(markdown, -1)
@@ -60,11 +60,14 @@ func processTags(tags *tags.Tags, filename, markdown string) string {
 
 	for _, tag := range matches {
 		if tag != "" {
-			// TODO Replace with link to tag overview.
-			// markdown = strings.ReplaceAll(markdown, tag, "")
-
 			// Triming is easier than using the matcher's group.
 			tag = strings.Trim(tag, " \n\r\t")
+
+			// TODO Replace with link to tag overview.
+			link := fmt.Sprintf("[%s](/tag/%s)", tag, tag[1:])
+			markdown = strings.ReplaceAll(markdown, tag, link)
+
+			// Update tag cache.
 			fileTags[tag] = empty
 		}
 	}

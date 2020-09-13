@@ -93,14 +93,6 @@ func (h *Handler) HandleTag(c echo.Context) error {
 
 	tags := strings.Builder{}
 	for _, file := range fileList {
-		// TODO Use regex for correct filtering
-		// Ignore date prefix if exists.
-		// (buggy but suffices for now)
-		// f := strings.SplitN(file, " ", 2)
-		// if len(f) > 1 {
-		// 	file = f[1]
-		// }
-
 		tags.WriteString("- [[")
 		tags.WriteString(file)
 		tags.WriteString("]]\n")
