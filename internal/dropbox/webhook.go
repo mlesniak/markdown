@@ -116,8 +116,8 @@ func (s *Service) performCacheUpdate(log echo.Logger, entries []entry, updater U
 	}
 }
 
-func (s *Service) PreloadCache(log echo.Logger) {
-	visibleFiles := []string{}
+func (s *Service) PreloadCache(log echo.Logger, updater Updater) {
+	// Tree-search starting at the root file.
 	queue := make([]string, len(s.preloadRoot))
 	copy(queue, s.preloadRoot)
 	visited := make(map[string]struct{})
@@ -128,8 +128,6 @@ func (s *Service) PreloadCache(log echo.Logger) {
 		if _, found := visited[filename]; found {
 			continue
 		}
-		println("Viewing " + filename)
-		visibleFiles = append(visibleFiles, filename)
 
 		// Read file.
 		bs, err := s.Read(log, filename)
@@ -138,16 +136,15 @@ func (s *Service) PreloadCache(log echo.Logger) {
 			return
 		}
 
-		// Parse new filenames.
+		// Update cache entry for this file asynchronously.
+		go updater(log, filename, bs)
+
+		// Parse new filenames by searching for wikilinks.
 		markdown := string(bs)
 		regex := regexp.MustCompile(`\[\[(.*?)\]\]`)
 		submatches := regex.FindAllStringSubmatch(markdown, -1)
 		for _, matches := range submatches {
 			queue = append(queue, matches[1])
 		}
-	}
-
-	for _, v := range visibleFiles {
-		println(v)
 	}
 }

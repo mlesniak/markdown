@@ -37,11 +37,17 @@ func main() {
 	// Initialize services.
 	dropboxService := initDropboxStorage()
 	cacheService := cache.New()
+	handlerService := handler.Handler{
+		RootFilename:  rootFilename,
+		StorageReader: dropboxService,
+		Cache:         cacheService,
+	}
 
 	// Preload files.
-	go func() {
-		dropboxService.PreloadCache(e.Logger)
-	}()
+	// I am not happy that file rendering is part of the handlerService.
+	go dropboxService.PreloadCache(e.Logger, func(log echo.Logger, filename string, data []byte) {
+		handlerService.RenderFile(log, filename, data)
+	})
 
 	// Configure middlewares.
 	e.Use(handler.BuildVersionHeader())
@@ -55,18 +61,13 @@ func main() {
 	e.Static("/download", downloadRoot)
 
 	// Serve dynamic files.
-	h := handler.Handler{
-		RootFilename:  rootFilename,
-		StorageReader: dropboxService,
-		Cache:         cacheService,
-	}
-	e.GET("/", h.Handle)
-	e.GET("/:name", h.Handle)
+	e.GET("/", handlerService.Handle)
+	e.GET("/:name", handlerService.Handle)
 
 	// Handle cache invalidation through dropbox webhooks.
 	e.GET("/dropbox/webhook", dropboxService.HandleChallenge)
 	e.POST("/dropbox/webhook", dropboxService.WebhookHandler(func(log echo.Logger, filename string, data []byte) {
-		h.RenderFile(log, filename, data)
+		handlerService.RenderFile(log, filename, data)
 	}))
 
 	// Start server.
@@ -87,6 +88,7 @@ func initDropboxStorage() *dropbox.Service {
 		panic("No dropbox app secret set, aborting.")
 	}
 
+	// TODO configurable list
 	preloads := []string{
 		"202009010520 index",
 		"202009010533 about",
