@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"github.com/mlesniak/markdown/internal/cache"
+	"github.com/mlesniak/markdown/internal/markdown"
 	"github.com/mlesniak/markdown/internal/tags"
 	"net/http"
 	"os"
@@ -36,29 +37,40 @@ func (h *Handler) Handle(c echo.Context) error {
 		return nil
 	}
 
+	// We only serve HTML files in dynamic content.
+	c.Response().Header().Add("Content-Type", "text/html; charset=UTF-8")
+
 	// Append markdown suffix and handle / - path.
 	filename = h.fixFilename(filename)
 
 	// Check if the file is in cache and can be used.
 	html, inCache := h.useCache(log, filename)
-	if !inCache {
-		// Try to read file from dropbox storage.
-		bs, stop := h.readFromStorage(c, filename)
-		if stop {
-			// If we should stop, we always return 404 for security reasons.
-			return c.String(http.StatusNotFound, "File not found:"+filename)
-		}
-
-		// Render file
-		html, stop = h.RenderFile(log, false, filename, bs)
-		if stop {
-			// If we should stop, we always return 404 for security reasons.
-			return c.String(http.StatusNotFound, "File not found:"+filename)
-		}
+	if inCache {
+		return c.String(http.StatusOK, html)
 	}
 
-	// Return generated HTML file with correct content type.
-	c.Response().Header().Add("Content-Type", "text/html; charset=UTF-8")
+	// Try to read file from dropbox storage.
+	bs, stop := h.readFromStorage(c, filename)
+	if stop {
+		// If we should stop, we always return 404 for security reasons.
+		return c.String(http.StatusNotFound, "File not found:"+filename)
+	}
+
+	// TODO Compute tags.
+
+	// Render file and process markdown.
+	html, stop = markdown.RenderFile(log, filename, bs)
+	if stop {
+		// If we should stop, we always return 404 for security reasons.
+		return c.String(http.StatusNotFound, "File not found:"+filename)
+	}
+
+	// Add to cache.
+	h.Cache.Add(cache.Entry{
+		Name: filename,
+		Data: []byte(html),
+	})
+
 	return c.String(http.StatusOK, html)
 }
 
@@ -107,7 +119,8 @@ func (h *Handler) HandleTag(c echo.Context) error {
 	// Create dynamic markdown.
 	markdown := fmt.Sprintf("# %s\n\n%s", tag, tags.String())
 
-	html, _ := h.RenderFile(c.Logger(), true, tag, []byte(markdown))
+	// html, _ := h.RenderFile(c.Logger(), tag, []byte(markdown))
+	html := markdown
 	c.Response().Header().Add("Content-Type", "text/html; charset=UTF-8")
 	return c.String(http.StatusOK, html)
 }

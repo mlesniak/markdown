@@ -7,6 +7,7 @@ import (
 	"github.com/mlesniak/markdown/internal/cache"
 	"github.com/mlesniak/markdown/internal/dropbox"
 	"github.com/mlesniak/markdown/internal/handler"
+	"github.com/mlesniak/markdown/internal/markdown"
 	"github.com/mlesniak/markdown/internal/tags"
 	"github.com/ziflex/lecho/v2"
 	"os"
@@ -45,9 +46,13 @@ func main() {
 	}
 
 	// Preload files.
-	// I am not happy that file rendering is part of the handlerService.
 	go dropboxService.PreloadCache(e.Logger, func(log echo.Logger, filename string, data []byte) {
-		handlerService.RenderFile(log, false, filename, data)
+		html, _ := markdown.RenderFile(log, filename, data)
+		log.Infof("Inital cache population for filename=%s", filename)
+		handlerService.Cache.Add(cache.Entry{
+			Name: filename,
+			Data: []byte(html),
+		})
 	})
 
 	// Configure middlewares.
@@ -69,7 +74,7 @@ func main() {
 	// Handle cache invalidation through dropbox webhooks.
 	e.GET("/dropbox/webhook", dropboxService.HandleChallenge)
 	e.POST("/dropbox/webhook", dropboxService.WebhookHandler(func(log echo.Logger, filename string, data []byte) {
-		handlerService.RenderFile(log, false, filename, data)
+		markdown.RenderFile(log, filename, data)
 	}))
 
 	// Start server.
