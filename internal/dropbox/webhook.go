@@ -59,8 +59,6 @@ func (s *Service) WebhookHandler(updater Updater) echo.HandlerFunc {
 				var es entries
 				json.Unmarshal(bs, &es)
 				s.cursor = es.Cursor
-				// Pre-load cache.
-				// s.PreloadCache(log)
 			}()
 		} else {
 			go func() {
@@ -114,7 +112,7 @@ func (s *Service) performCacheUpdate(log echo.Logger, entries []entry, updater U
 	for _, e := range entries {
 		log.Infof("Updating cache entry. filename=%s", e.Name)
 		bs, _ := s.Read(log, e.Name)
-		updater(log, e.Name, bs)
+		go updater(log, e.Name, bs)
 	}
 }
 
