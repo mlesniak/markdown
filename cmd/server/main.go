@@ -47,7 +47,7 @@ func main() {
 
 	// Preload files.
 	go dropboxService.PreloadCache(e.Logger, func(log echo.Logger, filename string, data []byte) {
-		html, _ := markdown.RenderFile(log, filename, data)
+		html, _ := markdown.ToHTML(log, filename, data)
 		log.Infof("Inital cache population for filename=%s", filename)
 		handlerService.Cache.Add(cache.Entry{
 			Name: filename,
@@ -74,7 +74,7 @@ func main() {
 	// Handle cache invalidation through dropbox webhooks.
 	e.GET("/dropbox/webhook", dropboxService.HandleChallenge)
 	e.POST("/dropbox/webhook", dropboxService.WebhookHandler(func(log echo.Logger, filename string, data []byte) {
-		markdown.RenderFile(log, filename, data)
+		markdown.ToHTML(log, filename, data)
 	}))
 
 	// Start server.

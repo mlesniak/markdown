@@ -59,7 +59,7 @@ func (h *Handler) Handle(c echo.Context) error {
 	// TODO Compute tags.
 
 	// Render file and process markdown.
-	html, stop = markdown.RenderFile(log, filename, bs)
+	html, stop = markdown.ToHTML(log, filename, bs)
 	if stop {
 		// If we should stop, we always return 404 for security reasons.
 		return c.String(http.StatusNotFound, "File not found:"+filename)
@@ -119,7 +119,7 @@ func (h *Handler) HandleTag(c echo.Context) error {
 	// Create dynamic markdown.
 	markdown := fmt.Sprintf("# %s\n\n%s", tag, tags.String())
 
-	// html, _ := h.RenderFile(c.Logger(), tag, []byte(markdown))
+	// html, _ := h.ToHTML(c.Logger(), tag, []byte(markdown))
 	html := markdown
 	c.Response().Header().Add("Content-Type", "text/html; charset=UTF-8")
 	return c.String(http.StatusOK, html)
