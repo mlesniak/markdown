@@ -36,6 +36,13 @@ This is a custom hacked-together markdown-to-html server for [mlesniak.com](http
       -e REGION=EU \
       sematext/logagent:latest
       
+## Display log on terminal
+
+... and ignore server logs
+
+    scripts/logs.sh|jq -r '(select(.message != null) | .time + "\t" + .message)'      
+      
+      
 ## License
 
 The source code is licensed under the [Apache license](LICENSE).      
