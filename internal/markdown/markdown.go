@@ -89,7 +89,8 @@ func convertTags(markdown string) string {
 	tags := GetTags(markdown)
 
 	for _, tag := range tags {
-		link := fmt.Sprintf("[%s](/tag/%s)", tag, tag[1:])
+		// link := fmt.Sprintf("[%s](/tag/%s)", tag, tag[1:])
+		link := fmt.Sprintf(`<a href="%s" class="tag">%s </a>`, tag[1:], tag)
 		markdown = strings.ReplaceAll(markdown, tag, link)
 	}
 
