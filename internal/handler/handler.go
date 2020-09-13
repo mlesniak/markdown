@@ -40,8 +40,8 @@ func (h *Handler) Handle(c echo.Context) error {
 	filename = h.fixFilename(filename)
 
 	// Check if the file is in cache and can be used.
-	html, found := h.useCache(log, filename)
-	if !found {
+	html, inCache := h.useCache(log, filename)
+	if !inCache {
 		// Try to read file from dropbox storage.
 		bs, stop := h.readFromStorage(c, filename)
 		if stop {
