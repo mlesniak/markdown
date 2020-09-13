@@ -7,6 +7,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"io/ioutil"
 	"net/http"
+	"time"
 )
 
 // apiCallHeader generalizes different api calls to dropbox.
@@ -15,6 +16,7 @@ import (
 func (s *Service) apiCallHeader(log echo.Logger, url string, argument interface{}) ([]byte, error) {
 	// Create general request.
 	client := http.Client{}
+	client.Timeout = time.Second * 10
 	request, err := http.NewRequest("POST", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create request: %s", err)
@@ -62,6 +64,7 @@ func (s *Service) apiCall(log echo.Logger, url string, argument interface{}) ([]
 
 	// Create general request.
 	client := http.Client{}
+	client.Timeout = time.Second * 10
 	request, err := http.NewRequest("POST", url, reader)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create request: %s", err)
