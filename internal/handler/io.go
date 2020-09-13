@@ -14,17 +14,17 @@ type StorageReader interface {
 // readFromStorage reads the given file from dropbox. If there is an error,
 // true is returned and an error message is stored in the return value of
 // the context, i.e. with c.String(...).
-func (h *Handler) readFromStorage(c echo.Context, filename string) (string, bool) {
+func (h *Handler) readFromStorage(c echo.Context, filename string) ([]byte, bool) {
 	log := c.Logger()
 
 	// Read file from dropbox.
 	bs, err := h.StorageReader.Read(c.Logger(), filename)
 	if err != nil {
 		log.Infof("Error reading file: %v for %s", err, filename)
-		return "", true
+		return nil, true
 	}
 
-	return h.RenderFile(log, false, filename, bs)
+	return bs, false
 }
 
 // fixFilename transform the requested filename, i.e. redirects to

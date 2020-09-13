@@ -43,12 +43,18 @@ func (h *Handler) Handle(c echo.Context) error {
 	html, found := h.useCache(log, filename)
 	if !found {
 		// Try to read file from dropbox storage.
-		tmp, stop := h.readFromStorage(c, filename)
+		bs, stop := h.readFromStorage(c, filename)
 		if stop {
 			// If we should stop, we always return 404 for security reasons.
 			return c.String(http.StatusNotFound, "File not found:"+filename)
 		}
-		html = tmp
+
+		// Render file
+		html, stop = h.RenderFile(log, false, filename, bs)
+		if stop {
+			// If we should stop, we always return 404 for security reasons.
+			return c.String(http.StatusNotFound, "File not found:"+filename)
+		}
 	}
 
 	// Return generated HTML file with correct content type.
