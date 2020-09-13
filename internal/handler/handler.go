@@ -59,8 +59,8 @@ func (h *Handler) Handle(c echo.Context) error {
 	// TODO Compute tags.
 
 	// Render file and process markdown.
-	html, stop = markdown.ToHTML(log, filename, bs)
-	if stop {
+	html, err := markdown.ToHTML(log, filename, bs)
+	if err != nil {
 		// If we should stop, we always return 404 for security reasons.
 		return c.String(http.StatusNotFound, "File not found:"+filename)
 	}
