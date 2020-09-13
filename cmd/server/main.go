@@ -17,6 +17,8 @@ const (
 
 	// Directory containing static files for website.
 	staticRoot = "static/"
+
+	rootFilename = "202009010520 index"
 )
 
 func main() {
@@ -36,6 +38,11 @@ func main() {
 	dropboxService := initDropboxStorage()
 	cacheService := cache.New()
 
+	// Preload files.
+	go func() {
+		dropboxService.PreloadCache(e.Logger)
+	}()
+
 	// Configure middlewares.
 	e.Use(handler.BuildVersionHeader())
 	e.Use(middleware.RequestID())
@@ -49,7 +56,7 @@ func main() {
 
 	// Serve dynamic files.
 	h := handler.Handler{
-		RootFilename:  "202009010520 index",
+		RootFilename:  rootFilename,
 		StorageReader: dropboxService,
 		Cache:         cacheService,
 	}
@@ -79,5 +86,10 @@ func initDropboxStorage() *dropbox.Service {
 	if dropboxAppSecret == "" {
 		panic("No dropbox app secret set, aborting.")
 	}
-	return dropbox.New(dropboxAppSecret, dropboxToken, "notes/")
+
+	preloads := []string{
+		"202009010520 index",
+		"202009010533 about",
+	}
+	return dropbox.New(dropboxAppSecret, dropboxToken, "notes/", preloads)
 }

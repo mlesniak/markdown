@@ -10,7 +10,8 @@ type Service struct {
 	token         string
 	rootDirectory string
 	// Since we have only one account, the cursor is part of the service.
-	cursor string
+	cursor      string
+	preloadRoot []string
 }
 
 type entry struct {
@@ -25,7 +26,7 @@ type entry struct {
 // specific application.
 //
 // The rootDirectory is the root for all accessed files.
-func New(appSecret, token string, rootDirectory string) *Service {
+func New(appSecret, token string, rootDirectory string, preloads []string) *Service {
 	if !strings.HasSuffix(rootDirectory, "/") {
 		rootDirectory = rootDirectory + "/"
 	}
@@ -34,5 +35,6 @@ func New(appSecret, token string, rootDirectory string) *Service {
 		appSecret:     appSecret,
 		token:         token,
 		rootDirectory: rootDirectory,
+		preloadRoot:   preloads,
 	}
 }

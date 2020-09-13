@@ -8,6 +8,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"io/ioutil"
 	"net/http"
+	"regexp"
 )
 
 // Updater describes a function which is called when a file has been changed
@@ -58,6 +59,8 @@ func (s *Service) WebhookHandler(updater Updater) echo.HandlerFunc {
 				var es entries
 				json.Unmarshal(bs, &es)
 				s.cursor = es.Cursor
+				// Pre-load cache.
+				// s.PreloadCache(log)
 			}()
 		} else {
 			go func() {
@@ -112,5 +115,41 @@ func (s *Service) performCacheUpdate(log echo.Logger, entries []entry, updater U
 		log.Infof("Updating cache entry. filename=%s", e.Name)
 		bs, _ := s.Read(log, e.Name)
 		updater(log, e.Name, bs)
+	}
+}
+
+func (s *Service) PreloadCache(log echo.Logger) {
+	visibleFiles := []string{}
+	queue := make([]string, len(s.preloadRoot))
+	copy(queue, s.preloadRoot)
+	visited := make(map[string]struct{})
+
+	for len(queue) > 0 {
+		filename := queue[0] + ".md"
+		queue = queue[1:]
+		if _, found := visited[filename]; found {
+			continue
+		}
+		println("Viewing " + filename)
+		visibleFiles = append(visibleFiles, filename)
+
+		// Read file.
+		bs, err := s.Read(log, filename)
+		if err != nil {
+			log.Warnf("Error reading root file. filename=%s, error=%s", filename, err.Error())
+			return
+		}
+
+		// Parse new filenames.
+		markdown := string(bs)
+		regex := regexp.MustCompile(`\[\[(.*?)\]\]`)
+		submatches := regex.FindAllStringSubmatch(markdown, -1)
+		for _, matches := range submatches {
+			queue = append(queue, matches[1])
+		}
+	}
+
+	for _, v := range visibleFiles {
+		println(v)
 	}
 }
