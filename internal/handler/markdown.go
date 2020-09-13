@@ -43,7 +43,7 @@ func convertWikiLinks(markdown string) string {
 		} else {
 			displayedName = filenameParts[1]
 		}
-		markdownLink := fmt.Sprintf(`[%s](%s)`, displayedName, fileLinkName)
+		markdownLink := fmt.Sprintf(`[%s](/%s)`, displayedName, fileLinkName)
 		markdown = strings.ReplaceAll(markdown, wikiLink, markdownLink)
 	}
 
@@ -66,8 +66,12 @@ func processTags(tags *tags.Tags, filename, markdown string) string {
 			// Triming is easier than using the matcher's group.
 			tag = strings.Trim(tag, " \n\r\t")
 			fileTags[tag] = empty
-			println(filename + "; TAG: <" + tag + ">")
 		}
+	}
+
+	// TODO Back and forth and back again. Not good. What is our actual filename?
+	if strings.HasSuffix(filename, ".md") {
+		filename = filename[:len(filename)-3]
 	}
 
 	tags.Update(filename, fileTags)

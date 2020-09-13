@@ -47,7 +47,7 @@ func main() {
 	// Preload files.
 	// I am not happy that file rendering is part of the handlerService.
 	go dropboxService.PreloadCache(e.Logger, func(log echo.Logger, filename string, data []byte) {
-		handlerService.RenderFile(log, filename, data)
+		handlerService.RenderFile(log, false, filename, data)
 	})
 
 	// Configure middlewares.
@@ -69,7 +69,7 @@ func main() {
 	// Handle cache invalidation through dropbox webhooks.
 	e.GET("/dropbox/webhook", dropboxService.HandleChallenge)
 	e.POST("/dropbox/webhook", dropboxService.WebhookHandler(func(log echo.Logger, filename string, data []byte) {
-		handlerService.RenderFile(log, filename, data)
+		handlerService.RenderFile(log, false, filename, data)
 	}))
 
 	// Start server.

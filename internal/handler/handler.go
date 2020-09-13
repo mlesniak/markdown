@@ -1,11 +1,13 @@
 package handler
 
 import (
+	"fmt"
 	"github.com/labstack/echo/v4"
 	"github.com/mlesniak/markdown/internal/cache"
 	"github.com/mlesniak/markdown/internal/tags"
 	"net/http"
 	"os"
+	"strings"
 )
 
 const (
@@ -82,9 +84,32 @@ func (h *Handler) useCache(log echo.Logger, filename string) (string, bool) {
 	return "", false
 }
 
+// TODO Internal flag == true is bad design.
+// TODO Is this another special case for read from storage?
 func (h *Handler) HandleTag(c echo.Context) error {
 	tag := c.Param("tag")
 	tag = "#" + tag
 	fileList := h.Tags.List(tag)
-	return c.JSON(http.StatusOK, fileList)
+
+	tags := strings.Builder{}
+	for _, file := range fileList {
+		// TODO Use regex for correct filtering
+		// Ignore date prefix if exists.
+		// (buggy but suffices for now)
+		// f := strings.SplitN(file, " ", 2)
+		// if len(f) > 1 {
+		// 	file = f[1]
+		// }
+
+		tags.WriteString("- [[")
+		tags.WriteString(file)
+		tags.WriteString("]]\n")
+	}
+
+	// Create dynamic markdown.
+	markdown := fmt.Sprintf("# %s\n\n%s", tag, tags.String())
+
+	html, _ := h.RenderFile(c.Logger(), true, tag, []byte(markdown))
+	c.Response().Header().Add("Content-Type", "text/html; charset=UTF-8")
+	return c.String(http.StatusOK, html)
 }

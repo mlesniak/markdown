@@ -24,7 +24,7 @@ func (h *Handler) readFromStorage(c echo.Context, filename string) (string, bool
 		return "", true
 	}
 
-	return h.RenderFile(log, filename, bs)
+	return h.RenderFile(log, false, filename, bs)
 }
 
 // fixFilename transform the requested filename, i.e. redirects to

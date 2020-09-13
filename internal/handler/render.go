@@ -10,9 +10,10 @@ import (
 	"strings"
 )
 
-func (h *Handler) RenderFile(log echo.Logger, filename string, data []byte) (string, bool) {
+// TODO Fix internal flag: this is ugly for such a general function
+func (h *Handler) RenderFile(log echo.Logger, internal bool, filename string, data []byte) (string, bool) {
 	// Are we allowed to display this file?
-	if !isPublic(data) {
+	if !internal && !isPublic(data) {
 		// We use the same error message to prevent
 		// guessing non-accessible filenames.
 		log.Infof("File not public accessible: %s", filename)
@@ -39,10 +40,12 @@ func (h *Handler) RenderFile(log echo.Logger, filename string, data []byte) (str
 	html = strings.ReplaceAll(html, "${build}", buildInformation())
 
 	// Add to cache.
-	h.Cache.Add(cache.Entry{
-		Name: filename,
-		Data: []byte(html),
-	})
+	if !internal {
+		h.Cache.Add(cache.Entry{
+			Name: filename,
+			Data: []byte(html),
+		})
+	}
 
 	return html, false
 }
