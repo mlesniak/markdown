@@ -2,6 +2,8 @@
 // a we over-engineering a simple map structure?
 package cache
 
+import "sync"
+
 // CacheEntry describes a Cache entry.
 type Entry struct {
 	Name string
@@ -10,6 +12,7 @@ type Entry struct {
 
 type Cache struct {
 	cache map[string]Entry
+	lock  sync.Mutex
 }
 
 func New() *Cache {
@@ -20,10 +23,14 @@ func New() *Cache {
 }
 
 func (c *Cache) Add(entry Entry) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	c.cache[entry.Name] = entry
 }
 
 func (c *Cache) Get(name string) ([]byte, bool) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	entry, ok := c.cache[name]
 	if !ok {
 		return nil, false
