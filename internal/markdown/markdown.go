@@ -4,7 +4,6 @@ package markdown
 import (
 	"fmt"
 	"regexp"
-	"sort"
 	"strings"
 )
 
@@ -75,6 +74,5 @@ func GetTags(data []byte) []string {
 		}
 	}
 
-	sort.Strings(tags)
 	return tags
 }

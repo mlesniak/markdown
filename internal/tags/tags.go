@@ -1,6 +1,8 @@
 package tags
 
-import "strings"
+import (
+	"strings"
+)
 
 type tags = map[string]struct{}
 
@@ -15,6 +17,7 @@ func New() *Tags {
 }
 
 func (t *Tags) Update(filename string, tags []string) {
+
 	// Ignore adding tags.
 	if strings.HasPrefix(filename, "#") {
 		return
@@ -37,6 +40,7 @@ func (t *Tags) List(tag string) []string {
 		}
 	}
 
-	// TODO Sort this.
+	// TODO Fix filename sorting: sort by visible names and not the names including timestamp!
+	// sort.Strings(filenames)
 	return filenames
 }
