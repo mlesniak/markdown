@@ -10,9 +10,6 @@ import (
 const (
 	// Default title if the title can not be extracted from the markdown file.
 	defaultTitle = "mlesniak.com"
-
-	// Tag name to define markdown files which are allowed to be published.
-	publishTag = "#public"
 )
 
 // processRawMarkdown performs various conversion steps which are not supported by
@@ -86,18 +83,19 @@ func ProcessTags(filename, markdown string, tagHandler func(tag string)) string 
 }
 
 func convertTags(markdown string) string {
-	tags := GetTags(markdown)
+	tags := GetTags([]byte(markdown))
 
 	for _, tag := range tags {
 		// link := fmt.Sprintf("[%s](/tag/%s)", tag, tag[1:])
-		link := fmt.Sprintf(`<a href="%s" class="tag">%s </a>`, tag[1:], tag)
+		link := fmt.Sprintf(`<a href="/tag/%s" class="tag">%s </a>`, tag[1:], tag)
 		markdown = strings.ReplaceAll(markdown, tag, link)
 	}
 
 	return markdown
 }
 
-func GetTags(markdown string) []string {
+func GetTags(data []byte) []string {
+	markdown := string(data)
 	regex := regexp.MustCompile(` *(#\w+)`)
 	matches := regex.FindAllString(markdown, -1)
 

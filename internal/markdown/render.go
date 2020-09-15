@@ -1,7 +1,6 @@
 package markdown
 
 import (
-	"bytes"
 	"errors"
 	"github.com/labstack/echo/v4"
 	"github.com/russross/blackfriday/v2"
@@ -11,14 +10,6 @@ import (
 )
 
 func ToHTML(log echo.Logger, filename string, data []byte) (string, error) {
-	// Are we allowed to display this file?
-	if !isPublic(data) {
-		// We use the same error message to prevent
-		// guessing non-accessible filenames.
-		log.Infof("File not public accessible: %s", filename)
-		return "", errors.New("file not public")
-	}
-
 	// Perform various pre-processing steps on the markdown.
 	markdown := processRawMarkdown(data)
 	titleLine := computeTitle(markdown)
@@ -48,13 +39,6 @@ func buildInformation() string {
 		buildInformation = "not available"
 	}
 	return buildInformation
-}
-
-// isPublic checks if a file is allowed to be displayed: Since we are only
-// downloading markdown files, we enforce that all files must contain the tag
-// `publishTag` to be able to download it.
-func isPublic(bs []byte) bool {
-	return bytes.Contains(bs, []byte(publishTag))
 }
 
 // computeTitle uses the first line in markdown as title if available and feasible.

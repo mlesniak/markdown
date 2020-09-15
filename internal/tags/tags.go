@@ -14,13 +14,18 @@ func New() *Tags {
 	}
 }
 
-func (t *Tags) Update(filename string, tags tags) {
+func (t *Tags) Update(filename string, tags []string) {
 	// Ignore adding tags.
 	if strings.HasPrefix(filename, "#") {
 		return
 	}
 
-	t.tags[filename] = tags
+	tm := make(map[string]struct{})
+	for _, tag := range tags {
+		tm[tag] = struct{}{}
+	}
+
+	t.tags[filename] = tm
 }
 
 func (t *Tags) List(tag string) []string {
@@ -32,5 +37,6 @@ func (t *Tags) List(tag string) []string {
 		}
 	}
 
+	// TODO Sort this.
 	return filenames
 }

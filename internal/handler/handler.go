@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"github.com/mlesniak/markdown/internal/cache"
@@ -14,6 +15,9 @@ import (
 const (
 	// Directory containing static files for website.
 	staticRoot = "static/"
+
+	// Tag name to define markdown files which are allowed to be published.
+	publishTag = "#public"
 )
 
 type Handler struct {
@@ -56,7 +60,16 @@ func (h *Handler) Handle(c echo.Context) error {
 		return c.String(http.StatusNotFound, "File not found:"+filename)
 	}
 
-	// TODO Compute tags.
+	// Are we allowed to display this file?
+	if !isPublic(bs) {
+		// We use the same error message to prevent guessing non-accessible filenames.
+		log.Infof("File not public accessible: %s", filename)
+		return c.String(http.StatusNotFound, "File not found:"+filename)
+	}
+
+	// TODO Work consistently on []byte instead of switching ...
+	tagList := markdown.GetTags(bs)
+	h.Tags.Update(filename, tagList)
 
 	// Render file and process markdown.
 	html, err := markdown.ToHTML(log, filename, bs)
@@ -102,6 +115,8 @@ func (h *Handler) useCache(log echo.Logger, filename string) (string, bool) {
 	return "", false
 }
 
+// TODO Move to tags package
+//
 // TODO Internal flag == true is bad design.
 // TODO Is this another special case for read from storage?
 func (h *Handler) HandleTag(c echo.Context) error {
@@ -117,10 +132,18 @@ func (h *Handler) HandleTag(c echo.Context) error {
 	}
 
 	// Create dynamic markdown.
-	markdown := fmt.Sprintf("# %s\n\n%s", tag, tags.String())
+	tag = tag[1:]
+	md := []byte(fmt.Sprintf("# %s\n\n%s", tag, tags.String()))
 
-	// html, _ := h.ToHTML(c.Logger(), tag, []byte(markdown))
-	html := markdown
+	html, _ := markdown.ToHTML(c.Logger(), tag, md)
+	// html := markdown
 	c.Response().Header().Add("Content-Type", "text/html; charset=UTF-8")
 	return c.String(http.StatusOK, html)
+}
+
+// isPublic checks if a file is allowed to be displayed: Since we are only
+// downloading markdown files, we enforce that all files must contain the tag
+// `publishTag` to be able to download it.
+func isPublic(bs []byte) bool {
+	return bytes.Contains(bs, []byte(publishTag))
 }
