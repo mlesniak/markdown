@@ -48,39 +48,6 @@ func convertWikiLinks(markdown string) string {
 	return markdown
 }
 
-// TODO split rendering and tag extraction.
-
-func ProcessTags(filename, markdown string, tagHandler func(tag string)) string {
-	regex := regexp.MustCompile(` *(#\w+)`)
-	matches := regex.FindAllString(markdown, -1)
-
-	empty := struct{}{}
-	fileTags := make(map[string]struct{})
-
-	for _, tag := range matches {
-		if tag != "" {
-			// Triming is easier than using the matcher's group.
-			tag = strings.Trim(tag, " \n\r\t")
-
-			// TODO Replace with link to tag overview.
-			link := fmt.Sprintf("[%s](/tag/%s)", tag, tag[1:])
-			markdown = strings.ReplaceAll(markdown, tag, link)
-
-			// Update tag cache.
-			fileTags[tag] = empty
-		}
-	}
-
-	// TODO Back and forth and back again. Not good. What is our actual filename?
-	if strings.HasSuffix(filename, ".md") {
-		filename = filename[:len(filename)-3]
-	}
-
-	// tags.Update(filename, fileTags)
-
-	return markdown
-}
-
 func convertTags(markdown string) string {
 	tags := GetTags([]byte(markdown))
 
