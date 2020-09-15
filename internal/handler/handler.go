@@ -138,7 +138,7 @@ func (h *Handler) HandleTag(c echo.Context) error {
 	}
 
 	// Create dynamic markdown.
-	md := []byte(fmt.Sprintf("# %s\n\n%s", tag, tags.String()))
+	md := []byte(fmt.Sprintf("# Articles tagged %s\n\n%s", tag, tags.String()))
 
 	html, _ := markdown.ToHTML(c.Logger(), tag, md)
 	// html := markdown
