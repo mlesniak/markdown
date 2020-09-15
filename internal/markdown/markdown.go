@@ -17,8 +17,6 @@ const (
 // a potential title.
 func processRawMarkdown(rawMarkdown []byte) string {
 	markdown := string(rawMarkdown)
-	// TODO Replace is done here.
-	// TODO Updating tag list is not.
 	markdown = convertTags(markdown)
 	markdown = convertWikiLinks(markdown)
 	return markdown

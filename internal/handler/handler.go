@@ -31,6 +31,12 @@ type Handler struct {
 // to download the correct markdown file from dropbox, perform various transformations
 // and convert it to html.
 func (h *Handler) Handle(c echo.Context) error {
+	// ******************************************************************************
+	// TODO Is this complex logic actually necessary? We will always use cache due to
+	//      path traversal from root? Or I simply know the filename.
+	//		Won't need security, then, anyway.
+	// ******************************************************************************
+
 	log := c.Logger()
 	filename := c.Param("name")
 
@@ -132,7 +138,6 @@ func (h *Handler) HandleTag(c echo.Context) error {
 	}
 
 	// Create dynamic markdown.
-	tag = tag[1:]
 	md := []byte(fmt.Sprintf("# %s\n\n%s", tag, tags.String()))
 
 	html, _ := markdown.ToHTML(c.Logger(), tag, md)

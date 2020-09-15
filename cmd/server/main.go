@@ -47,7 +47,12 @@ func main() {
 
 	// Preload files.
 	go dropboxService.PreloadCache(e.Logger, func(log echo.Logger, filename string, data []byte) {
+		// TODO This is partially the same functionality as in handler.Handler(), combine it.
 		html, _ := markdown.ToHTML(log, filename, data)
+
+		tagList := markdown.GetTags(data)
+		handlerService.Tags.Update(filename, tagList)
+
 		log.Infof("Inital cache population for filename=%s", filename)
 		handlerService.Cache.Add(cache.Entry{
 			Name: filename,
