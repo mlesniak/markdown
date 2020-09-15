@@ -110,5 +110,7 @@ func initDropboxStorage() *dropbox.Service {
 		"202009010520 index",
 		"202009010533 about",
 	}
+
+	// TODO Struct instead of parameter list.
 	return dropbox.New(dropboxAppSecret, dropboxToken, "notes/", preloads)
 }
