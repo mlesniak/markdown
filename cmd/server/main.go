@@ -45,8 +45,7 @@ func main() {
 	tagsService := tags.New()
 	cacheService := cache.New()
 	handlerService := handler.Handler{
-		RootFilename: rootFilename,
-		Cache:        cacheService,
+		Cache: cacheService,
 	}
 
 	// Preload files.
@@ -66,7 +65,11 @@ func main() {
 	e.Static("/download", downloadRoot)
 
 	// Serve dynamic files.
-	e.GET("/", handlerService.Handle)
+	e.GET("/", func(c echo.Context) error {
+		c.SetParamNames("name")
+		c.SetParamValues(rootFilename)
+		return handlerService.Handle(c)
+	})
 	e.GET("/:name", handlerService.Handle)
 	e.GET("/tag/:tag", tagsService.HandleTag)
 

@@ -13,8 +13,7 @@ const (
 )
 
 type Handler struct {
-	RootFilename string
-	Cache        *cache.Cache
+	Cache *cache.Cache
 }
 
 // Handle is the default handler for all non-static content. It uses the parameter name
