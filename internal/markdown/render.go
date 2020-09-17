@@ -48,7 +48,6 @@ func computeTitle(markdown string) string {
 	lines := strings.SplitN(markdown, "\n", 2)
 	if len(lines) > 0 {
 		titleLine = lines[0]
-		// titleLine = strings.ReplaceAll(titleLine, "#", "")
 		titleLine = strings.Trim(titleLine, " #")
 	}
 	return titleLine

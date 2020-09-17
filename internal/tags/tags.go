@@ -40,7 +40,5 @@ func (t *Tags) List(tag string) []string {
 		}
 	}
 
-	// TODO Fix filename sorting: sort by visible names and not the names including timestamp!
-	// sort.Strings(filenames)
 	return filenames
 }

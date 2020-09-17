@@ -9,6 +9,7 @@ import (
 	"github.com/mlesniak/markdown/internal/tags"
 	"net/http"
 	"os"
+	"sort"
 	"strings"
 )
 
@@ -128,13 +129,39 @@ func (h *Handler) useCache(log echo.Logger, filename string) (string, bool) {
 func (h *Handler) HandleTag(c echo.Context) error {
 	tag := c.Param("tag")
 	tag = "#" + tag
-	fileList := h.Tags.List(tag)
+	filenameList := h.Tags.List(tag)
+
+	// Take first h1 of file from cache?
+	// Sort by this then?
+	titlesFilenames := make(map[string]string)
+	for _, filename := range filenameList {
+		parts := strings.SplitN(filename, " ", 2)
+		var titleName string
+		if len(parts) < 2 {
+			titleName = parts[0]
+		} else {
+			titleName = parts[1]
+		}
+		// Remove .md suffix
+		titleName = titleName[:len(titleName)-3]
+		titlesFilenames[titleName] = filename
+	}
+
+	// Get list and sort.
+	titles := []string{}
+	for k, _ := range titlesFilenames {
+		titles = append(titles, k)
+	}
+	sort.Slice(titles, func(i, j int) bool {
+		return strings.ToLower(titles[i]) < strings.ToLower(titles[j])
+	})
 
 	tags := strings.Builder{}
-	for _, file := range fileList {
-		tags.WriteString("- [[")
-		tags.WriteString(file)
-		tags.WriteString("]]\n")
+	for _, title := range titles {
+		name := titlesFilenames[title]
+		link := fmt.Sprintf(`- <a href="/%s">%s</a>`, name, title)
+		tags.WriteString("\n")
+		tags.WriteString(link)
 	}
 
 	// Create dynamic markdown.
