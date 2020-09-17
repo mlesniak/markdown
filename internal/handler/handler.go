@@ -3,7 +3,6 @@ package handler
 import (
 	"github.com/labstack/echo/v4"
 	"github.com/mlesniak/markdown/internal/cache"
-	"github.com/mlesniak/markdown/internal/tags"
 	"net/http"
 	"os"
 )
@@ -14,10 +13,8 @@ const (
 )
 
 type Handler struct {
-	RootFilename  string
-	StorageReader StorageReader
-	Cache         *cache.Cache
-	Tags          *tags.Tags
+	RootFilename string
+	Cache        *cache.Cache
 }
 
 // Handle is the default handler for all non-static content. It uses the parameter name

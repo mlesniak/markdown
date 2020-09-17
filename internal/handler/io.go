@@ -1,31 +1,8 @@
 package handler
 
 import (
-	"github.com/labstack/echo/v4"
 	"strings"
 )
-
-// StorageReader allows to read data from an abstract storage.
-type StorageReader interface {
-	// Implemented by the dropbox interface.
-	Read(log echo.Logger, filename string) ([]byte, error)
-}
-
-// readFromStorage reads the given file from dropbox. If there is an error,
-// true is returned and an error message is stored in the return value of
-// the context, i.e. with c.String(...).
-func (h *Handler) readFromStorage(c echo.Context, filename string) ([]byte, bool) {
-	log := c.Logger()
-
-	// Read file from dropbox.
-	bs, err := h.StorageReader.Read(c.Logger(), filename)
-	if err != nil {
-		log.Infof("Error reading file: %v for %s", err, filename)
-		return nil, true
-	}
-
-	return bs, false
-}
 
 // fixFilename transform the requested filename, i.e. redirects to
 // index page or fixes simplified filenames without suffix.

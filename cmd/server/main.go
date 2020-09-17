@@ -45,10 +45,8 @@ func main() {
 	tagsService := tags.New()
 	cacheService := cache.New()
 	handlerService := handler.Handler{
-		RootFilename:  rootFilename,
-		StorageReader: dropboxService,
-		Cache:         cacheService,
-		Tags:          tagsService,
+		RootFilename: rootFilename,
+		Cache:        cacheService,
 	}
 
 	// Preload files.
