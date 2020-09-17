@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
@@ -21,6 +22,9 @@ const (
 	staticRoot = "static/"
 
 	rootFilename = "202009010520 index"
+
+	// Tag name to define markdown files which are allowed to be published.
+	publishTag = "#public"
 )
 
 func main() {
@@ -39,26 +43,17 @@ func main() {
 	// Initialize services.
 	dropboxService := initDropboxStorage()
 	tagsService := tags.New()
+	cacheService := cache.New()
 	handlerService := handler.Handler{
 		RootFilename:  rootFilename,
 		StorageReader: dropboxService,
-		Cache:         cache.New(),
+		Cache:         cacheService,
 		Tags:          tagsService,
 	}
 
 	// Preload files.
 	go dropboxService.PreloadCache(e.Logger, func(log echo.Logger, filename string, data []byte) {
-		// TODO This is partially the same functionality as in handler.Handler(), combine it.
-		html, _ := markdown.ToHTML(log, filename, data)
-
-		tagList := markdown.GetTags(data)
-		handlerService.Tags.Update(filename, tagList)
-
-		log.Infof("Inital cache population for filename=%s", filename)
-		handlerService.Cache.Add(cache.Entry{
-			Name: filename,
-			Data: []byte(html),
-		})
+		updateFile(log, filename, data, tagsService, cacheService)
 	})
 
 	// Configure middlewares.
@@ -74,18 +69,13 @@ func main() {
 
 	// Serve dynamic files.
 	e.GET("/", handlerService.Handle)
-	e.GET("/tag/:tag", tagsService.HandleTag)
 	e.GET("/:name", handlerService.Handle)
+	e.GET("/tag/:tag", tagsService.HandleTag)
 
 	// Handle cache invalidation through dropbox webhooks.
 	e.GET("/dropbox/webhook", dropboxService.HandleChallenge)
 	e.POST("/dropbox/webhook", dropboxService.WebhookHandler(func(log echo.Logger, filename string, data []byte) {
-		html, _ := markdown.ToHTML(log, filename, data)
-		log.Infof("Update cache after webhook for filename=%s", filename)
-		handlerService.Cache.Add(cache.Entry{
-			Name: filename,
-			Data: []byte(html),
-		})
+		updateFile(log, filename, data, tagsService, cacheService)
 	}))
 
 	// Start server.
@@ -114,4 +104,35 @@ func initDropboxStorage() *dropbox.Service {
 
 	// TODO Struct instead of parameter list.
 	return dropbox.New(dropboxAppSecret, dropboxToken, "notes/", preloads)
+}
+
+// updateFile receives a markdown file, renders its HTML, updates the tag list
+// and updates the corresponding cache entry.
+func updateFile(log echo.Logger, filename string, data []byte, tagsService *tags.Tags, cacheService *cache.Cache) {
+	// Just to be sure we do not accidentally serve a non-public, but linked file.
+	if !isPublic(data) {
+		log.Warnf("Preventing storing of non-public filename=%s", filename)
+		return
+	}
+
+	// Render file.
+	html, _ := markdown.ToHTML(log, filename, data)
+
+	// Upate tag list.
+	tagList := markdown.GetTags(data)
+	tagsService.Update(filename, tagList)
+
+	// Populate cache
+	log.Infof("Inital cache population for filename=%s", filename)
+	cacheService.Add(cache.Entry{
+		Name: filename,
+		Data: []byte(html),
+	})
+}
+
+// isPublic checks if a file is allowed to be displayed: Since we are only
+// downloading markdown files, we enforce that all files must contain the tag
+// `publishTag` to be able to download it.
+func isPublic(bs []byte) bool {
+	return bytes.Contains(bs, []byte(publishTag))
 }

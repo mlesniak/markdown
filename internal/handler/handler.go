@@ -1,10 +1,8 @@
 package handler
 
 import (
-	"bytes"
 	"github.com/labstack/echo/v4"
 	"github.com/mlesniak/markdown/internal/cache"
-	"github.com/mlesniak/markdown/internal/markdown"
 	"github.com/mlesniak/markdown/internal/tags"
 	"net/http"
 	"os"
@@ -13,9 +11,6 @@ import (
 const (
 	// Directory containing static files for website.
 	staticRoot = "static/"
-
-	// Tag name to define markdown files which are allowed to be published.
-	publishTag = "#public"
 )
 
 type Handler struct {
@@ -29,12 +24,6 @@ type Handler struct {
 // to download the correct markdown file from dropbox, perform various transformations
 // and convert it to html.
 func (h *Handler) Handle(c echo.Context) error {
-	// ******************************************************************************
-	// TODO Is this complex logic actually necessary? We will always use cache due to
-	//      path traversal from root? Or I simply know the filename.
-	//		Won't need security, then, anyway.
-	// ******************************************************************************
-
 	log := c.Logger()
 	filename := c.Param("name")
 
@@ -48,47 +37,16 @@ func (h *Handler) Handle(c echo.Context) error {
 	// We only serve HTML files in dynamic content.
 	c.Response().Header().Add("Content-Type", "text/html; charset=UTF-8")
 
-	// Append markdown suffix and handle / - path.
-	filename = h.fixFilename(filename)
-
 	// Check if the file is in cache and can be used.
+	filename = h.fixFilename(filename)
 	html, inCache := h.useCache(log, filename)
 	if inCache {
 		return c.String(http.StatusOK, html)
 	}
 
-	// Try to read file from dropbox storage.
-	bs, stop := h.readFromStorage(c, filename)
-	if stop {
-		// If we should stop, we always return 404 for security reasons.
-		return c.String(http.StatusNotFound, "File not found:"+filename)
-	}
-
-	// Are we allowed to display this file?
-	if !isPublic(bs) {
-		// We use the same error message to prevent guessing non-accessible filenames.
-		log.Infof("File not public accessible: %s", filename)
-		return c.String(http.StatusNotFound, "File not found:"+filename)
-	}
-
-	// TODO Work consistently on []byte instead of switching ...
-	tagList := markdown.GetTags(bs)
-	h.Tags.Update(filename, tagList)
-
-	// Render file and process markdown.
-	html, err := markdown.ToHTML(log, filename, bs)
-	if err != nil {
-		// If we should stop, we always return 404 for security reasons.
-		return c.String(http.StatusNotFound, "File not found:"+filename)
-	}
-
-	// Add to cache.
-	h.Cache.Add(cache.Entry{
-		Name: filename,
-		Data: []byte(html),
-	})
-
-	return c.String(http.StatusOK, html)
+	// This can only happen if we are starting, since otherwise the cache is filled.
+	log.Warn("File not in cache: %s", filename)
+	return c.String(http.StatusNotFound, "File not found:"+filename)
 }
 
 // serveStaticFile is a special handler to service static files in the root directory
@@ -117,11 +75,4 @@ func (h *Handler) useCache(log echo.Logger, filename string) (string, bool) {
 	}
 
 	return "", false
-}
-
-// isPublic checks if a file is allowed to be displayed: Since we are only
-// downloading markdown files, we enforce that all files must contain the tag
-// `publishTag` to be able to download it.
-func isPublic(bs []byte) bool {
-	return bytes.Contains(bs, []byte(publishTag))
 }
