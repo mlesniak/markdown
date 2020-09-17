@@ -113,7 +113,7 @@ func initDropboxStorage() *dropbox.Service {
 func updateFile(log echo.Logger, filename string, data []byte, tagsService *tags.Tags, cacheService *cache.Cache) {
 	// Just to be sure we do not accidentally serve a non-public, but linked file.
 	if !isPublic(data) {
-		log.Warnf("Preventing storing of non-public filename=%s", filename)
+		log.Warnf("Preventing caching of non-public filename=%s", filename)
 		return
 	}
 
@@ -125,7 +125,7 @@ func updateFile(log echo.Logger, filename string, data []byte, tagsService *tags
 	tagsService.Update(filename, tagList)
 
 	// Populate cache
-	log.Infof("Inital cache population for filename=%s", filename)
+	log.Infof("Update cache for filename=%s", filename)
 	cacheService.Add(cache.Entry{
 		Name: filename,
 		Data: []byte(html),
