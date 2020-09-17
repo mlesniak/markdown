@@ -38,11 +38,12 @@ func main() {
 
 	// Initialize services.
 	dropboxService := initDropboxStorage()
+	tagsService := tags.New()
 	handlerService := handler.Handler{
 		RootFilename:  rootFilename,
 		StorageReader: dropboxService,
 		Cache:         cache.New(),
-		Tags:          tags.New(),
+		Tags:          tagsService,
 	}
 
 	// Preload files.
@@ -73,7 +74,7 @@ func main() {
 
 	// Serve dynamic files.
 	e.GET("/", handlerService.Handle)
-	e.GET("/tag/:tag", handlerService.HandleTag)
+	e.GET("/tag/:tag", tagsService.HandleTag)
 	e.GET("/:name", handlerService.Handle)
 
 	// Handle cache invalidation through dropbox webhooks.
