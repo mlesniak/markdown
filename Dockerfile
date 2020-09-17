@@ -12,3 +12,4 @@ WORKDIR /data
 ADD data .
 COPY --from=0 /markdown/markdown /markdown/server
 ENTRYPOINT ["/markdown/server"]
+
