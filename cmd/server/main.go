@@ -10,6 +10,7 @@ import (
 	"github.com/mlesniak/markdown/internal/handler"
 	"github.com/mlesniak/markdown/internal/markdown"
 	"github.com/mlesniak/markdown/internal/tags"
+	"github.com/mlesniak/markdown/internal/utils"
 	"github.com/ziflex/lecho/v2"
 	"os"
 )
@@ -120,7 +121,7 @@ func updateFile(log echo.Logger, filename string, data []byte, tagsService *tags
 	html, _ := markdown.ToHTML(log, filename, data)
 
 	// Upate tag list.
-	tagList := markdown.GetTags(data)
+	tagList := utils.GetTags(data)
 	tagsService.Update(filename, tagList)
 
 	// Populate cache

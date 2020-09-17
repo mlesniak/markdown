@@ -51,7 +51,6 @@ func (t *Tags) HandleTag(c echo.Context) error {
 	md := []byte(fmt.Sprintf("# Articles tagged %s\n\n%s", tag, tags.String()))
 
 	html, _ := markdown.ToHTML(c.Logger(), tag, md)
-	// html := markdown
 	c.Response().Header().Add("Content-Type", "text/html; charset=UTF-8")
 	return c.String(http.StatusOK, html)
 }
