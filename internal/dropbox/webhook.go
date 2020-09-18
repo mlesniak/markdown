@@ -132,8 +132,8 @@ func (s *Service) PreloadCache(log echo.Logger, updater Updater) {
 		// Read file.
 		bs, err := s.Read(log, filename)
 		if err != nil {
-			log.Warnf("Error reading root file. filename=%s, error=%s", filename, err.Error())
-			return
+			log.Warnf("Error reading file (continuing). filename=%s, error=%s", filename, err.Error())
+			continue
 		}
 
 		// Update cache entry for this file asynchronously.
