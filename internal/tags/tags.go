@@ -16,6 +16,10 @@ func New() *Tags {
 	}
 }
 
+func (t *Tags) Clear() {
+	t.tags = make(map[string]tags)
+}
+
 func (t *Tags) Update(filename string, tags []string) {
 
 	// Ignore adding tags.

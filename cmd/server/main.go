@@ -12,6 +12,7 @@ import (
 	"github.com/mlesniak/markdown/internal/tags"
 	"github.com/mlesniak/markdown/internal/utils"
 	"github.com/ziflex/lecho/v2"
+	"net/http"
 	"os"
 )
 
@@ -50,9 +51,7 @@ func main() {
 	}
 
 	// Preload files.
-	go dropboxService.PreloadCache(e.Logger, func(log echo.Logger, filename string, data []byte) {
-		updateFile(log, filename, data, tagsService, cacheService)
-	})
+	go initializeCache(dropboxService, e, tagsService, cacheService)
 
 	// Configure middlewares.
 	e.Use(handler.BuildVersionHeader())
@@ -72,6 +71,16 @@ func main() {
 		return handlerService.Handle(c)
 	})
 	e.GET("/:name", handlerService.Handle)
+
+	// Tag-based endpoints.
+	apiToken := os.Getenv("API_TOKEN")
+	if apiToken != "" {
+		e.DELETE("/tag/"+apiToken, func(c echo.Context) error {
+			tagsService.Clear()
+			go initializeCache(dropboxService, e, tagsService, cacheService)
+			return c.String(http.StatusOK, "Started cache reset")
+		})
+	}
 	e.GET("/tag/:tag", tagsService.HandleTag)
 
 	// Handle cache invalidation through dropbox webhooks.
@@ -84,6 +93,12 @@ func main() {
 	e.HideBanner = true
 	e.HidePort = true
 	e.Logger.Fatal(e.Start(":8080"))
+}
+
+func initializeCache(dropboxService *dropbox.Service, e *echo.Echo, tagsService *tags.Tags, cacheService *cache.Cache) {
+	dropboxService.PreloadCache(e.Logger, func(log echo.Logger, filename string, data []byte) {
+		updateFile(log, filename, data, tagsService, cacheService)
+	})
 }
 
 // initDropboxStorage initializes the dropbox service by defining the
