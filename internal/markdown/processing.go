@@ -1,4 +1,3 @@
-// TODO Split functions into multiple files.
 package markdown
 
 import (
