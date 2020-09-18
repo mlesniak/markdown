@@ -116,7 +116,7 @@ func initDropboxStorage() *dropbox.Service {
 	// TODO configurable list
 	preloads := []string{
 		"202009010520 index",
-		"202009010533 about",
+		"202009010533 About me",
 	}
 
 	// TODO Struct instead of parameter list.
