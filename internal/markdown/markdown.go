@@ -18,15 +18,16 @@ func ToHTML(log echo.Logger, filename string, data []byte) (string, error) {
 	html := string(blackfriday.Run([]byte(markdown), blackfriday.WithRenderer(renderer)))
 
 	// Inject rendered html into template and fill variables.
-	// If we'll have more variables we'd use proper templating.
+	// We are intentionally not using html.template here since we
+	// do don't want escaping, etc.
 	bsTemplate, err := ioutil.ReadFile("template.html")
 	if err != nil {
 		log.Warn("Template not found. This should never happen.")
 		return "", errors.New("template not found")
 	}
-	html = strings.ReplaceAll(string(bsTemplate), "${content}", html)
-	html = strings.ReplaceAll(html, "${title}", titleLine)
-	html = strings.ReplaceAll(html, "${build}", buildInformation())
+	html = strings.ReplaceAll(string(bsTemplate), "{{content}}", html)
+	html = strings.ReplaceAll(html, "{{title}}", titleLine)
+	html = strings.ReplaceAll(html, "{{build}}", buildInformation())
 
 	return html, nil
 }
