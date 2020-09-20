@@ -21,7 +21,6 @@ func (t *Tags) Clear() {
 }
 
 func (t *Tags) Update(filename string, tags []string) {
-
 	// Ignore adding tags.
 	if strings.HasPrefix(filename, "#") {
 		return
