@@ -14,8 +14,21 @@ func New() *Backlinks {
 }
 
 // For debugging
-func (t *Backlinks) Get() map[string]filename {
+func (t *Backlinks) DebugGet() map[string]filename {
 	return t.links
+}
+
+func (t *Backlinks) GetLinks(filename string) []string {
+	mapFilenames, found := t.links[filename]
+	if !found {
+		return []string{}
+	}
+
+	filenames := []string{}
+	for k, _ := range mapFilenames {
+		filenames = append(filenames, k)
+	}
+	return filenames
 }
 
 func (t *Backlinks) Clear() {
@@ -23,13 +36,6 @@ func (t *Backlinks) Clear() {
 }
 
 func (t *Backlinks) AddTargets(filename string, targets []string) {
-	// tm := make(map[string]struct{})
-	// for _, tag := range parentLinks {
-	// 	tm[tag] = struct{}{}
-	// }
-	//
-	// t.links[filename] = tm
-
 	for _, name := range targets {
 		// Race condition?
 		if t.links[name] == nil {

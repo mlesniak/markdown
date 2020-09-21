@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
@@ -89,7 +88,8 @@ func main() {
 	// Handle cache invalidation through dropbox webhooks.
 	e.GET("/dropbox/webhook", dropboxService.HandleChallenge)
 	e.POST("/dropbox/webhook", dropboxService.WebhookHandler(func(log echo.Logger, filename string, data []byte) {
-		updateFile(log, filename, data, tagsService, cacheService, backlinksService)
+		updateFile(log, filename, data, tagsService, cacheService)
+		// TODO Handle backlink update here.
 	}))
 
 	// Start server.
@@ -100,7 +100,20 @@ func main() {
 
 func initializeCache(dropboxService *dropbox.Service, e *echo.Echo, tagsService *tags.Tags, cacheService *cache.Cache, backlinkService *backlinks.Backlinks) {
 	dropboxService.PreloadCache(e.Logger, func(log echo.Logger, filename string, data []byte) {
-		updateFile(log, filename, data, tagsService, cacheService, backlinkService)
+		updateFile(log, filename, data, tagsService, cacheService)
+	}, func() {
+		// Update backlinks.
+		println("\n\n*************** Finished, computing backlinks")
+		for _, name := range cacheService.List() {
+			println(name)
+			html, _ := cacheService.Get(name)
+			links := utils.GetLinks(html)
+			backlinkService.AddTargets(name+".md", links)
+			for _, link := range links {
+				println("-> " + link)
+			}
+		}
+		println("breakpoint")
 	})
 }
 
@@ -128,27 +141,19 @@ func initDropboxStorage() *dropbox.Service {
 
 // updateFile receives a markdown file, renders its HTML, updates the tag list
 // and updates the corresponding cache entry.
-func updateFile(log echo.Logger, filename string, data []byte, tagsService *tags.Tags, cacheService *cache.Cache, backlinksService *backlinks.Backlinks) {
+func updateFile(log echo.Logger, filename string, data []byte, tagsService *tags.Tags, cacheService *cache.Cache) {
 	// Just to be sure we do not accidentally serve a non-public, but linked file.
 	if !isPublic(data) {
 		log.Warnf("Preventing caching of non-public filename=%s", filename)
 		return
 	}
 
-	// Render file.
-	html, _ := markdown.ToHTML(log, filename, data)
-
 	// Update tag list.
 	tagList := utils.GetTags(data)
 	tagsService.Update(filename, tagList)
 
-	// Update backlink list.
-	targets := utils.GetLinks(data)
-	backlinksService.AddTargets(filename, targets)
-	fmt.Printf("\n*** %s -> %v\n", filename, targets)
-	for name, links := range backlinksService.Get() {
-		fmt.Printf("%v linking to %s\n\n", links, name)
-	}
+	// Render file.
+	html, _ := markdown.ToHTML(log, data)
 
 	// Populate cache
 	log.Infof("Update cache for filename=%s", filename)

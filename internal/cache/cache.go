@@ -28,6 +28,15 @@ func (c *Cache) Add(entry Entry) {
 	c.cache[entry.Name] = entry
 }
 
+func (c *Cache) List() []string {
+	keys := []string{}
+
+	for k := range c.cache {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
 func (c *Cache) Get(name string) ([]byte, bool) {
 	c.lock.Lock()
 	defer c.lock.Unlock()

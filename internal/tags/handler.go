@@ -30,7 +30,7 @@ func (t *Tags) HandleTag(c echo.Context) error {
 		titlesFilenames[titleName] = filename
 	}
 
-	// Get list and sort.
+	// DebugGet list and sort.
 	titles := []string{}
 	for k, _ := range titlesFilenames {
 		titles = append(titles, k)
@@ -52,7 +52,7 @@ func (t *Tags) HandleTag(c echo.Context) error {
 	// Create dynamic markdown.
 	md := []byte(fmt.Sprintf("# Articles tagged %s\n\n%s", tag, tags.String()))
 
-	html, _ := markdown.ToHTML(c.Logger(), tag, md)
+	html, _ := markdown.ToHTML(c.Logger(), md)
 	c.Response().Header().Add("Content-Type", "text/html; charset=UTF-8")
 	return c.String(http.StatusOK, html)
 }

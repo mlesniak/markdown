@@ -26,7 +26,7 @@ func GetTags(data []byte) []string {
 
 func GetLinks(data []byte) []string {
 	markdown := string(data)
-	regex := regexp.MustCompile(`\[\[(.*?)\]\]`)
+	regex := regexp.MustCompile(`<a href="\/([0-9].+?)"`)
 
 	links := []string{}
 

@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func ToHTML(log echo.Logger, filename string, data []byte) (string, error) {
+func ToHTML(log echo.Logger, data []byte) (string, error) {
 	// Perform various pre-processing steps on the markdown.
 	markdown := processRawMarkdown(data)
 	titleLine := title(markdown)
