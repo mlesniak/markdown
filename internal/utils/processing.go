@@ -23,3 +23,18 @@ func GetTags(data []byte) []string {
 
 	return tags
 }
+
+func GetLinks(data []byte) []string {
+	markdown := string(data)
+	regex := regexp.MustCompile(`\[\[(.*?)\]\]`)
+
+	links := []string{}
+
+	submatches := regex.FindAllStringSubmatch(markdown, -1)
+	for _, matches := range submatches {
+		link := matches[1]
+		links = append(links, link)
+	}
+
+	return links
+}
