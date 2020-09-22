@@ -55,6 +55,7 @@ func (t *Tags) HandleTag(c echo.Context) error {
 	md := []byte(fmt.Sprintf("# Articles tagged %s\n\n%s", tag, content))
 
 	html, _ := markdown.ToHTML(c.Logger(), md)
+	html = strings.ReplaceAll(html, "{{backlinks}}", "")
 	c.Response().Header().Add("Content-Type", "text/html; charset=UTF-8")
 	return c.String(http.StatusOK, html)
 }
