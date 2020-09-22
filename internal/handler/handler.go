@@ -43,26 +43,28 @@ func (h *Handler) Handle(c echo.Context) error {
 	filename = h.fixFilename(filename)
 	html, inCache := h.useCache(log, filename)
 	if inCache {
+		buf := strings.Builder{}
 		links := h.Backlinks.GetLinks(filename)
 
-		// Create HTML for displaying backlinks.
-		sort.Slice(links, func(i, j int) bool {
-			return strings.ToLower(links[i]) < strings.ToLower(links[j])
-		})
-		tags := strings.Builder{}
-		tags.WriteString("<hr/><ul>")
-		for _, title := range links {
-			displayTitle := utils.AutoCaptialize(title)
+		if len(links) > 0 {
+			// Create HTML for displaying backlinks.
+			sort.Slice(links, func(i, j int) bool {
+				return strings.ToLower(links[i]) < strings.ToLower(links[j])
+			})
+			buf.WriteString("<hr/><ul>")
+			for _, title := range links {
+				displayTitle := utils.AutoCaptialize(title)
 
-			name := title // TODO Generate displayable name
-			link := fmt.Sprintf(`<li><a href="/%s">%s</a></li>`, name, displayTitle)
-			tags.WriteString("\n")
-			tags.WriteString(link)
+				name := title // TODO Generate displayable name
+				link := fmt.Sprintf(`<li><a href="/%s">%s</a></li>`, name, displayTitle)
+				buf.WriteString("\n")
+				buf.WriteString(link)
+			}
+			buf.WriteString(`</ul>`)
 		}
-		tags.WriteString(`</ul>`)
-		content := tags.String()
 
-		html = strings.ReplaceAll(html, "{{backlinks}}", content)
+		backLinkHTML := buf.String()
+		html = strings.ReplaceAll(html, "{{backlinks}}", backLinkHTML)
 		return c.String(http.StatusOK, html)
 	}
 
