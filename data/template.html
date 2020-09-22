@@ -227,6 +227,24 @@
             color: #333333;
             font-family: sans-serif, "Helvetica", "Arial", sans-serif;
         }
+
+        .references {
+            color: darkgray !important;;
+            font-size: 0.8em;
+        }
+
+        /*.references > hr {*/
+        /*    margin-top: 15px;*/
+        /*    margin-bottom: -10px;*/
+        /*}*/
+
+        .references * > a {
+            color: darkgray !important;
+        }
+
+        .references > ul {
+            margin-top: -5px;
+        }
     </style>
 </head>
 <body>
@@ -235,7 +253,7 @@
     <a href="/">mlesniak.com</a>
 
     <a class="ignore-for-backlinks pull-right" href="/202009010533 About me"><img src="/static/about.svg"
-                                                                                          width="16"/></a>
+                                                                                  width="16"/></a>
     <a href="mailto:mail@mlesniak.com" class="pull-right"><img src="/static/email.svg" width="16"/></a>
     <a href="https://github.com/mlesniak/" class="pull-right"><img src="/static/github.svg" width="16"/></a>
     <a href="https://www.xing.com/profile/Michael_Lesniak/cv" class="pull-right"><img src="/static/xing.svg"
@@ -247,7 +265,9 @@
 
 {{content}}
 
-{{backlinks}}
+<div class="references">
+    {{backlinks}}
+</div>
 
 </body>
 </html>
