@@ -1,10 +1,13 @@
 package handler
 
 import (
+	"fmt"
 	"github.com/labstack/echo/v4"
+	"github.com/mlesniak/markdown/internal/backlinks"
 	"github.com/mlesniak/markdown/internal/cache"
 	"net/http"
 	"os"
+	"strings"
 )
 
 const (
@@ -13,7 +16,8 @@ const (
 )
 
 type Handler struct {
-	Cache *cache.Cache
+	Cache     *cache.Cache
+	Backlinks *backlinks.Backlinks
 }
 
 // Handle is the default handler for all non-static content. It uses the parameter name
@@ -37,6 +41,12 @@ func (h *Handler) Handle(c echo.Context) error {
 	filename = h.fixFilename(filename)
 	html, inCache := h.useCache(log, filename)
 	if inCache {
+		// Add backlinks. TODO always empty list
+		links := h.Backlinks.GetLinks(filename)
+		// .md extensions is here but not in backlinks structure since not in links
+		// design decision: must be present, fix in GetLinks
+		slinks := fmt.Sprintf("%v", links)
+		html = strings.ReplaceAll(html, "{{backlinks}}", slinks)
 		return c.String(http.StatusOK, html)
 	}
 

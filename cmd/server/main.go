@@ -49,7 +49,8 @@ func main() {
 	backlinksService := backlinks.New()
 	cacheService := cache.New()
 	handlerService := handler.Handler{
-		Cache: cacheService,
+		Cache:     cacheService,
+		Backlinks: backlinksService,
 	}
 
 	// Preload files.
@@ -108,7 +109,7 @@ func initializeCache(dropboxService *dropbox.Service, e *echo.Echo, tagsService 
 			println(name)
 			html, _ := cacheService.Get(name)
 			links := utils.GetLinks(html)
-			backlinkService.AddTargets(name+".md", links)
+			backlinkService.AddTargets(name, links)
 			for _, link := range links {
 				println("-> " + link)
 			}
