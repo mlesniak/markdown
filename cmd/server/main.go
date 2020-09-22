@@ -104,17 +104,11 @@ func initializeCache(dropboxService *dropbox.Service, e *echo.Echo, tagsService 
 		updateFile(log, filename, data, tagsService, cacheService)
 	}, func() {
 		// Update backlinks.
-		println("\n\n*************** Finished, computing backlinks")
 		for _, name := range cacheService.List() {
-			println(name)
 			html, _ := cacheService.Get(name)
 			links := utils.GetLinks(html)
 			backlinkService.AddTargets(name, links)
-			for _, link := range links {
-				println("-> " + link)
-			}
 		}
-		println("breakpoint")
 	})
 }
 
