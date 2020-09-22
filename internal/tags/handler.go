@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"github.com/mlesniak/markdown/internal/markdown"
+	"github.com/mlesniak/markdown/internal/utils"
 	"net/http"
 	"sort"
 	"strings"
@@ -41,33 +42,19 @@ func (t *Tags) HandleTag(c echo.Context) error {
 
 	tags := strings.Builder{}
 	for _, title := range titles {
-		displayTitle := autoCaptialize(title)
+		displayTitle := utils.AutoCaptialize(title)
 
 		name := titlesFilenames[title]
 		link := fmt.Sprintf(`- <a href="/%s">%s</a>`, name, displayTitle)
 		tags.WriteString("\n")
 		tags.WriteString(link)
 	}
+	content := tags.String()
 
 	// Create dynamic markdown.
-	md := []byte(fmt.Sprintf("# Articles tagged %s\n\n%s", tag, tags.String()))
+	md := []byte(fmt.Sprintf("# Articles tagged %s\n\n%s", tag, content))
 
 	html, _ := markdown.ToHTML(c.Logger(), md)
 	c.Response().Header().Add("Content-Type", "text/html; charset=UTF-8")
 	return c.String(http.StatusOK, html)
-}
-
-// autoCaptialize replaces the beginning of each word in a string with its uppercase pendant.
-func autoCaptialize(title string) string {
-	parts := strings.Split(title, " ")
-	capitalized := []string{}
-	for _, part := range parts {
-		t := strings.ToTitle(string(part[0]))
-		if len(part) > 1 {
-			t = t + part[1:]
-		}
-
-		capitalized = append(capitalized, t)
-	}
-	return strings.Join(capitalized, " ")
 }

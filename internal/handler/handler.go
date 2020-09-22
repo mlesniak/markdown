@@ -5,8 +5,10 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/mlesniak/markdown/internal/backlinks"
 	"github.com/mlesniak/markdown/internal/cache"
+	"github.com/mlesniak/markdown/internal/utils"
 	"net/http"
 	"os"
+	"sort"
 	"strings"
 )
 
@@ -41,12 +43,26 @@ func (h *Handler) Handle(c echo.Context) error {
 	filename = h.fixFilename(filename)
 	html, inCache := h.useCache(log, filename)
 	if inCache {
-		// Add backlinks. TODO always empty list
 		links := h.Backlinks.GetLinks(filename)
-		// .md extensions is here but not in backlinks structure since not in links
-		// design decision: must be present, fix in GetLinks
-		slinks := fmt.Sprintf("%v", links)
-		html = strings.ReplaceAll(html, "{{backlinks}}", slinks)
+
+		// Create HTML for displaying backlinks.
+		sort.Slice(links, func(i, j int) bool {
+			return strings.ToLower(links[i]) < strings.ToLower(links[j])
+		})
+		tags := strings.Builder{}
+		tags.WriteString("<hr/><ul>")
+		for _, title := range links {
+			displayTitle := utils.AutoCaptialize(title)
+
+			name := title // TODO Generate displayable name
+			link := fmt.Sprintf(`<li><a href="/%s">%s</a></li>`, name, displayTitle)
+			tags.WriteString("\n")
+			tags.WriteString(link)
+		}
+		tags.WriteString(`</ul>`)
+		content := tags.String()
+
+		html = strings.ReplaceAll(html, "{{backlinks}}", content)
 		return c.String(http.StatusOK, html)
 	}
 
