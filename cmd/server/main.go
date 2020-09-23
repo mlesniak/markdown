@@ -9,11 +9,8 @@ import (
 	"github.com/mlesniak/markdown/internal/cache"
 	"github.com/mlesniak/markdown/internal/dropbox"
 	"github.com/mlesniak/markdown/internal/handler"
-	"github.com/mlesniak/markdown/internal/markdown"
 	"github.com/mlesniak/markdown/internal/tags"
-	"github.com/mlesniak/markdown/internal/utils"
 	"github.com/ziflex/lecho/v2"
-	"net/http"
 	"os"
 )
 
@@ -31,34 +28,23 @@ const (
 )
 
 func main() {
-	e := echo.New()
-
-	// Configure logging.
-	logger := lecho.New(
-		os.Stdout,
-		lecho.WithLevel(log.INFO),
-		lecho.WithTimestamp(),
-		lecho.WithCallerWithSkipFrameCount(3),
-		lecho.WithField("commit", handler.BuildInformation()),
-	)
-	e.Logger = logger
-
-	// Initialize services.
 	tagsService := tags.New()
 	cacheService := cache.New()
 	dropboxService := initDropboxStorage()
-	backlinksService := backlinks.New()
+	// backlinksService := backlinks.New()
 	handlerService := handler.Handler{
-		Cache:     cacheService,
-		Backlinks: backlinksService,
+		Cache: cacheService,
+		// Backlinks: backlinksService,
 	}
 
-	// Configure middlewares.
+	e := echo.New()
 	e.Use(handler.BuildVersionHeader())
 	e.Use(middleware.RequestID())
+	log := initializeLogger()
 	e.Use(lecho.Middleware(lecho.Config{
-		Logger: logger,
+		Logger: log,
 	}))
+	e.Logger = log
 
 	// Serve static and downloadable files.
 	e.Static("/static", staticRoot)
@@ -73,30 +59,41 @@ func main() {
 	e.GET("/:name", handlerService.Handle)
 
 	// Tag-based endpoints.
-	apiToken := os.Getenv("API_TOKEN")
-	if apiToken != "" {
-		e.DELETE("/tag/"+apiToken, func(c echo.Context) error {
-			tagsService.Clear()
-			go initializeCache(e, dropboxService, tagsService, cacheService, backlinksService)
-			return c.String(http.StatusOK, "Started cache reset")
-		})
-	}
+	// apiToken := os.Getenv("API_TOKEN")
+	// if apiToken != "" {
+	// 	e.DELETE("/tag/"+apiToken, func(c echo.Context) error {
+	// 		tagsService.Clear()
+	// 		go initializeCache(e, dropboxService, tagsService, cacheService, backlinksService)
+	// 		return c.String(http.StatusOK, "Started cache reset")
+	// 	})
+	// }
 	e.GET("/tag/:tag", tagsService.HandleTag)
 
 	// Handle cache invalidation through dropbox webhooks.
 	e.GET("/dropbox/webhook", dropboxService.HandleChallenge)
 	e.POST("/dropbox/webhook", dropboxService.WebhookHandler(func(log echo.Logger, filename string, data []byte) {
-		updateFile(log, filename, data, tagsService, cacheService)
-		// TODO Handle backlink update here.
+		// updateFile(log, filename, data, tagsService, cacheService)
+		// // TODO Handle backlink update here.
 	}))
 
 	// Preload files.
-	go initializeCache(e, dropboxService, tagsService, cacheService, backlinksService)
+	// initializeCache(e, dropboxService, tagsService, cacheService, backlinksService)
 
 	// Start server.
 	e.HideBanner = true
 	e.HidePort = true
 	e.Logger.Fatal(e.Start(":8080"))
+}
+
+func initializeLogger() *lecho.Logger {
+	logger := lecho.New(
+		os.Stdout,
+		lecho.WithLevel(log.INFO),
+		lecho.WithTimestamp(),
+		lecho.WithCallerWithSkipFrameCount(3),
+		lecho.WithField("commit", handler.BuildInformation()),
+	)
+	return logger
 }
 
 // initDropboxStorage initializes the dropbox service by defining the
@@ -113,8 +110,8 @@ func initDropboxStorage() *dropbox.Service {
 
 	// TODO This is the wrong place for this...
 	preloads := []string{
-		"202009010520 index",
-		"202009010533 About me",
+		// "202009010520 index",
+		// "202009010533 About me",
 	}
 
 	return dropbox.New(dropbox.Service{
@@ -126,44 +123,44 @@ func initDropboxStorage() *dropbox.Service {
 }
 
 func initializeCache(e *echo.Echo, dropboxService *dropbox.Service, tagsService *tags.Tags, cacheService *cache.Cache, backlinkService *backlinks.Backlinks) {
-	dropboxService.PreloadCache(e.Logger,
-		func(log echo.Logger, filename string, data []byte) {
-			updateFile(log, filename, data, tagsService, cacheService)
-		},
-		func() {
-			// Update backlinks.
-			for _, name := range cacheService.List() {
-				html, _ := cacheService.Get(name)
-				links := utils.GetLinks(html)
-				backlinkService.AddTargets(name, links)
-			}
-		})
+	// dropboxService.PreloadCache(e.Logger,
+	// 	func(log echo.Logger, filename string, data []byte) {
+	// 		updateFile(log, filename, data, tagsService, cacheService)
+	// 	},
+	// 	func() {
+	// 		// Update backlinks.
+	// 		for _, name := range cacheService.List() {
+	// 			html, _ := cacheService.Get(name)
+	// 			links := utils.GetLinks(html)
+	// 			backlinkService.AddTargets(name, links)
+	// 		}
+	// 	})
 }
 
 // TODO Move this to a more appropriate place.
 // updateFile receives a markdown file, renders its HTML, updates the tag list
 // and updates the corresponding cache entry.
-func updateFile(log echo.Logger, filename string, data []byte, tagsService *tags.Tags, cacheService *cache.Cache) {
-	// Just to be sure we do not accidentally serve a non-public, but linked file.
-	if !isPublic(data) {
-		log.Warnf("Preventing caching of non-public filename=%s", filename)
-		return
-	}
-
-	// Update tag list.
-	tagList := utils.GetTags(data)
-	tagsService.Update(filename, tagList)
-
-	// Render file.
-	html, _ := markdown.ToHTML(log, data)
-
-	// Populate cache
-	log.Infof("Update cache for filename=%s", filename)
-	cacheService.Add(cache.Entry{
-		Name: filename,
-		Data: []byte(html),
-	})
-}
+// func updateFile(log echo.Logger, filename string, data []byte, tagsService *tags.Tags, cacheService *cache.Cache) {
+// 	// Just to be sure we do not accidentally serve a non-public, but linked file.
+// 	if !isPublic(data) {
+// 		log.Warnf("Preventing caching of non-public filename=%s", filename)
+// 		return
+// 	}
+//
+// 	// Update tag list.
+// 	tagList := utils.GetTags(data)
+// 	tagsService.Update(filename, tagList)
+//
+// 	// Render file.
+// 	html, _ := markdown.ToHTML(log, data)
+//
+// 	// Populate cache
+// 	log.Infof("Update cache for filename=%s", filename)
+// 	cacheService.Add(cache.Entry{
+// 		Name: filename,
+// 		Data: []byte(html),
+// 	})
+// }
 
 // isPublic checks if a file is allowed to be displayed: Since we are only
 // downloading markdown files, we enforce that all files must contain the tag

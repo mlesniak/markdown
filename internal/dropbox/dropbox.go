@@ -12,6 +12,8 @@ type Service struct {
 	InitialRoots  []string
 	// Since we have only one account, the cursor is part of the service.
 	cursor string
+
+	queue Queue
 }
 
 type entry struct {
