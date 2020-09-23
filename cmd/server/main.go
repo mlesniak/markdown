@@ -11,7 +11,6 @@ import (
 	"github.com/mlesniak/markdown/internal/tags"
 	"github.com/ziflex/lecho/v2"
 	"os"
-	"time"
 )
 
 const (
@@ -62,15 +61,13 @@ func main() {
 	e.POST("/dropbox/webhook", dropboxService.WebhookHandler(func(log echo.Logger, filename string, data []byte) {
 		// updateFile(log, filename, data, tagsService, cacheService)
 		// TODO Remove pre-loading data, will be done in the queue.
-		dropboxService.UpdateFiles(filename)
+		// dropboxService.UpdateFile(filename)
 	}))
 
-	// Preload files.
-	// initializeCache(e, dropboxService, tagsService, cacheService, backlinksService)
-
 	dropboxService.Start()
-	time.Sleep(1 * time.Second)
-	dropboxService.UpdateFiles(rootFilename, "202009010533 About me.md")
+	// TODO Use recursive preload here
+	dropboxService.PreloadCache(e.Logger, rootFilename, "202009010533 About me.md")
+	// dropboxService.UpdateFile(rootFilename, "202009010533 About me.md")
 
 	// Start server.
 	e.HideBanner = true
