@@ -97,7 +97,7 @@ func (s *Service) validSignature(c echo.Context) bool {
 	}
 
 	// Compute expected signature.
-	mac := hmac.New(sha256.New, []byte(s.appSecret))
+	mac := hmac.New(sha256.New, []byte(s.AppSecret))
 	mac.Write(bs)
 	expectedMAC := mac.Sum(nil)
 
@@ -119,8 +119,8 @@ func (s *Service) performCacheUpdate(log echo.Logger, entries []entry, updater U
 
 func (s *Service) PreloadCache(log echo.Logger, updater Updater, finalizer func()) {
 	// Tree-search starting at the root file.
-	queue := make([]string, len(s.preloadRoot))
-	copy(queue, s.preloadRoot)
+	queue := make([]string, len(s.InitialRoots))
+	copy(queue, s.InitialRoots)
 	visited := make(map[string]struct{})
 
 	wg := sync.WaitGroup{}

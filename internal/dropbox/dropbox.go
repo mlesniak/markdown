@@ -6,12 +6,12 @@ import (
 
 // Service contains the necessary data to access a dropbox.
 type Service struct {
-	appSecret     string
-	token         string
-	rootDirectory string
+	AppSecret     string
+	Token         string
+	RootDirectory string
+	InitialRoots  []string
 	// Since we have only one account, the cursor is part of the service.
-	cursor      string
-	preloadRoot []string
+	cursor string
 }
 
 type entry struct {
@@ -26,15 +26,10 @@ type entry struct {
 // specific application.
 //
 // The rootDirectory is the root for all accessed files.
-func New(appSecret, token string, rootDirectory string, preloads []string) *Service {
-	if !strings.HasSuffix(rootDirectory, "/") {
-		rootDirectory = rootDirectory + "/"
+func New(s Service) *Service {
+	if !strings.HasSuffix(s.RootDirectory, "/") {
+		s.RootDirectory = s.RootDirectory + "/"
 	}
 
-	return &Service{
-		appSecret:     appSecret,
-		token:         token,
-		rootDirectory: rootDirectory,
-		preloadRoot:   preloads,
-	}
+	return &s
 }

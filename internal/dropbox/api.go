@@ -29,7 +29,7 @@ func (s *Service) apiCallHeader(log echo.Logger, url string, argument interface{
 	}
 
 	// Set token and payload for submitting.
-	request.Header.Add("Authorization", "Bearer "+s.token)
+	request.Header.Add("Authorization", "Bearer "+s.Token)
 	request.Header.Add("Dropbox-API-Arg", string(rawJson))
 
 	// Execute request.
@@ -71,7 +71,7 @@ func (s *Service) apiCall(log echo.Logger, url string, argument interface{}) ([]
 	}
 
 	// Set token and payload for submitting.
-	request.Header.Add("Authorization", "Bearer "+s.token)
+	request.Header.Add("Authorization", "Bearer "+s.Token)
 	request.Header.Set("Content-Type", "application/json")
 
 	// Execute request.

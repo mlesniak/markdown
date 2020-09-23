@@ -18,7 +18,7 @@ func (s *Service) Read(log echo.Logger, filename string) ([]byte, error) {
 	argument := struct {
 		Path string `json:"path"`
 	}{
-		Path: "/" + s.rootDirectory + filename,
+		Path: "/" + s.RootDirectory + filename,
 	}
 	bs, err := s.apiCallHeader(log, "https://content.dropboxapi.com/2/files/download", argument)
 	if err != nil {

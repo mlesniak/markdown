@@ -117,8 +117,12 @@ func initDropboxStorage() *dropbox.Service {
 		"202009010533 About me",
 	}
 
-	// TODO Struct instead of parameter list.
-	return dropbox.New(dropboxAppSecret, dropboxToken, "notes/", preloads)
+	return dropbox.New(dropbox.Service{
+		AppSecret:     dropboxAppSecret,
+		Token:         dropboxToken,
+		RootDirectory: "notes/",
+		InitialRoots:  preloads,
+	})
 }
 
 func initializeCache(e *echo.Echo, dropboxService *dropbox.Service, tagsService *tags.Tags, cacheService *cache.Cache, backlinkService *backlinks.Backlinks) {
