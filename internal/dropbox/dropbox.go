@@ -13,7 +13,7 @@ type Service struct {
 	// Since we have only one account, the cursor is part of the service.
 	cursor string
 
-	queue Queue
+	queue chan string
 }
 
 type entry struct {
@@ -34,4 +34,20 @@ func New(s Service) *Service {
 	}
 
 	return &s
+}
+
+func (s *Service) UpdateFiles(filenames ...string) {
+	for _, filename := range filenames {
+		s.queue <- filename
+	}
+}
+
+func (s *Service) Start() {
+	go func() {
+		for {
+			filename := <-s.queue
+			println(filename)
+			// log.Infof("Updating file %s", filename)
+		}
+	}()
 }

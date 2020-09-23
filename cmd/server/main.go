@@ -30,11 +30,9 @@ const (
 func main() {
 	tagsService := tags.New()
 	cacheService := cache.New()
-	dropboxService := initDropboxStorage()
-	// backlinksService := backlinks.New()
+	dropboxService := initializeDropboxStorage()
 	handlerService := handler.Handler{
 		Cache: cacheService,
-		// Backlinks: backlinksService,
 	}
 
 	e := echo.New()
@@ -58,15 +56,6 @@ func main() {
 	})
 	e.GET("/:name", handlerService.Handle)
 
-	// Tag-based endpoints.
-	// apiToken := os.Getenv("API_TOKEN")
-	// if apiToken != "" {
-	// 	e.DELETE("/tag/"+apiToken, func(c echo.Context) error {
-	// 		tagsService.Clear()
-	// 		go initializeCache(e, dropboxService, tagsService, cacheService, backlinksService)
-	// 		return c.String(http.StatusOK, "Started cache reset")
-	// 	})
-	// }
 	e.GET("/tag/:tag", tagsService.HandleTag)
 
 	// Handle cache invalidation through dropbox webhooks.
@@ -78,6 +67,8 @@ func main() {
 
 	// Preload files.
 	// initializeCache(e, dropboxService, tagsService, cacheService, backlinksService)
+
+	dropboxService.UpdateFiles(rootFilename, "202009010533 About me")
 
 	// Start server.
 	e.HideBanner = true
@@ -96,9 +87,7 @@ func initializeLogger() *lecho.Logger {
 	return logger
 }
 
-// initDropboxStorage initializes the dropbox service by defining the
-// dropbox developer token.
-func initDropboxStorage() *dropbox.Service {
+func initializeDropboxStorage() *dropbox.Service {
 	dropboxToken := os.Getenv("TOKEN")
 	if dropboxToken == "" {
 		panic("No dropbox token set, aborting.")
@@ -108,17 +97,10 @@ func initDropboxStorage() *dropbox.Service {
 		panic("No dropbox app secret set, aborting.")
 	}
 
-	// TODO This is the wrong place for this...
-	preloads := []string{
-		// "202009010520 index",
-		// "202009010533 About me",
-	}
-
 	return dropbox.New(dropbox.Service{
 		AppSecret:     dropboxAppSecret,
 		Token:         dropboxToken,
 		RootDirectory: "notes/",
-		InitialRoots:  preloads,
 	})
 }
 
