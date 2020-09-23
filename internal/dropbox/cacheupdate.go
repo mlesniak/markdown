@@ -12,8 +12,9 @@ type Updater func(log echo.Logger, filename string, data []byte)
 
 func (s *Service) XPreloadCache(log echo.Logger, updater Updater, finalizer func()) {
 	// Tree-search starting at the root file.
-	queue := make([]string, len(s.InitialRoots))
-	copy(queue, s.InitialRoots)
+	// queue := make([]string, len(s.InitialRoots))
+	// copy(queue, s.InitialRoots)
+	queue := []string{}
 	visited := make(map[string]struct{})
 
 	wg := sync.WaitGroup{}

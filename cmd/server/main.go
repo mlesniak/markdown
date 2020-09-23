@@ -12,6 +12,7 @@ import (
 	"github.com/mlesniak/markdown/internal/tags"
 	"github.com/ziflex/lecho/v2"
 	"os"
+	"time"
 )
 
 const (
@@ -28,9 +29,11 @@ const (
 )
 
 func main() {
+	log := initializeLogger()
+
 	tagsService := tags.New()
 	cacheService := cache.New()
-	dropboxService := initializeDropboxStorage()
+	dropboxService := initializeDropboxStorage(log)
 	handlerService := handler.Handler{
 		Cache: cacheService,
 	}
@@ -38,7 +41,6 @@ func main() {
 	e := echo.New()
 	e.Use(handler.BuildVersionHeader())
 	e.Use(middleware.RequestID())
-	log := initializeLogger()
 	e.Use(lecho.Middleware(lecho.Config{
 		Logger: log,
 	}))
@@ -62,12 +64,15 @@ func main() {
 	e.GET("/dropbox/webhook", dropboxService.HandleChallenge)
 	e.POST("/dropbox/webhook", dropboxService.WebhookHandler(func(log echo.Logger, filename string, data []byte) {
 		// updateFile(log, filename, data, tagsService, cacheService)
-		// // TODO Handle backlink update here.
+		// TODO Remove pre-loading data, will be done in the queue.
+		dropboxService.UpdateFiles(filename)
 	}))
 
 	// Preload files.
 	// initializeCache(e, dropboxService, tagsService, cacheService, backlinksService)
 
+	dropboxService.Start()
+	time.Sleep(1 * time.Second)
 	dropboxService.UpdateFiles(rootFilename, "202009010533 About me")
 
 	// Start server.
@@ -87,7 +92,7 @@ func initializeLogger() *lecho.Logger {
 	return logger
 }
 
-func initializeDropboxStorage() *dropbox.Service {
+func initializeDropboxStorage(log echo.Logger) *dropbox.Service {
 	dropboxToken := os.Getenv("TOKEN")
 	if dropboxToken == "" {
 		panic("No dropbox token set, aborting.")
@@ -101,6 +106,7 @@ func initializeDropboxStorage() *dropbox.Service {
 		AppSecret:     dropboxAppSecret,
 		Token:         dropboxToken,
 		RootDirectory: "notes/",
+		Log:           log,
 	})
 }
 

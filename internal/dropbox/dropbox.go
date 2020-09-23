@@ -1,6 +1,7 @@
 package dropbox
 
 import (
+	"github.com/labstack/echo/v4"
 	"strings"
 )
 
@@ -9,11 +10,10 @@ type Service struct {
 	AppSecret     string
 	Token         string
 	RootDirectory string
-	InitialRoots  []string
+	Log           echo.Logger
 	// Since we have only one account, the cursor is part of the service.
 	cursor string
-
-	queue chan string
+	queue  chan string
 }
 
 type entry struct {
@@ -29,25 +29,30 @@ type entry struct {
 //
 // The rootDirectory is the root for all accessed files.
 func New(s Service) *Service {
+	// TODO Complaing instead of automagically fixing.
 	if !strings.HasSuffix(s.RootDirectory, "/") {
 		s.RootDirectory = s.RootDirectory + "/"
 	}
+	s.queue = make(chan string)
 
 	return &s
 }
 
 func (s *Service) UpdateFiles(filenames ...string) {
 	for _, filename := range filenames {
-		s.queue <- filename
+		go func() {
+			s.Log.Infof("Adding to queue filename=%s", filename)
+			s.queue <- filename
+		}()
 	}
 }
 
 func (s *Service) Start() {
 	go func() {
+		s.Log.Info("Starting update queue watching...")
 		for {
 			filename := <-s.queue
-			println(filename)
-			// log.Infof("Updating file %s", filename)
+			s.Log.Infof("Updating file %s", filename)
 		}
 	}()
 }
