@@ -1,16 +1,12 @@
 package handler
 
 import (
-	"fmt"
 	"github.com/labstack/echo/v4"
-	"github.com/mlesniak/markdown/internal/backlinks"
 	"github.com/mlesniak/markdown/internal/cache"
 	"github.com/mlesniak/markdown/internal/utils"
 	"net/http"
 	"os"
 	"regexp"
-	"sort"
-	"strings"
 )
 
 const (
@@ -19,8 +15,8 @@ const (
 )
 
 type Handler struct {
-	Cache     *cache.Cache
-	Backlinks *backlinks.Backlinks
+	Cache *cache.Cache
+	// Backlinks *backlinks.Backlinks
 }
 
 // Handle is the default handler for all non-static content. It uses the parameter name
@@ -44,8 +40,9 @@ func (h *Handler) Handle(c echo.Context) error {
 	filename = h.fixFilename(filename)
 	html, inCache := h.useCache(log, filename)
 	if inCache {
-		backLinkHTML := h.generateBacklinkHTML(filename)
-		html = strings.ReplaceAll(html, "{{backlinks}}", backLinkHTML)
+		// TODO Backlink handling in cache, not here...
+		// backLinkHTML := h.generateBacklinkHTML(filename)
+		// html = strings.ReplaceAll(html, "{{backlinks}}", backLinkHTML)
 		return c.String(http.StatusOK, html)
 	}
 
@@ -58,26 +55,26 @@ func (h *Handler) Handle(c echo.Context) error {
 // page. Since this is not only dependent on the current page, we can't cache it.
 //
 // In theory, we could recompute all dependent pages and thus cache backlinks, too.
-func (h *Handler) generateBacklinkHTML(filename string) string {
-	buf := strings.Builder{}
-	links := h.Backlinks.GetLinks(filename)
-	if len(links) > 0 {
-		// Sort links by timestamp (for now).
-		sort.Strings(links)
-
-		// Generate HTML.
-		buf.WriteString(`<hr/>This page is referenced by<ul>`)
-		for _, name := range links {
-			displayName := visibleLink(name)
-			link := fmt.Sprintf(`<li><a href="/%s">%s</a></li>`, name, displayName)
-			buf.WriteString("\n")
-			buf.WriteString(link)
-		}
-		buf.WriteString(`</ul>`)
-	}
-	backLinkHTML := buf.String()
-	return backLinkHTML
-}
+// func (h *Handler) generateBacklinkHTML(filename string) string {
+// 	buf := strings.Builder{}
+// 	links := h.Backlinks.GetLinks(filename)
+// 	if len(links) > 0 {
+// 		// Sort links by timestamp (for now).
+// 		sort.Strings(links)
+//
+// 		// Generate HTML.
+// 		buf.WriteString(`<hr/>This page is referenced by<ul>`)
+// 		for _, name := range links {
+// 			displayName := visibleLink(name)
+// 			link := fmt.Sprintf(`<li><a href="/%s">%s</a></li>`, name, displayName)
+// 			buf.WriteString("\n")
+// 			buf.WriteString(link)
+// 		}
+// 		buf.WriteString(`</ul>`)
+// 	}
+// 	backLinkHTML := buf.String()
+// 	return backLinkHTML
+// }
 
 // visibleLink converts a filename to a displayable variant, i.e. for
 // the name 202009010520 Index foo bar.md it returns `Index Foo Bar`.
@@ -110,7 +107,7 @@ func (h *Handler) serveStaticFile(c echo.Context, filename string) bool {
 
 // useCache tries to use the cache entry to serve a precomputed and stored file.
 func (h *Handler) useCache(log echo.Logger, filename string) (string, bool) {
-	entry, ok := h.Cache.Get(filename)
+	entry, ok := h.Cache.GetEntry(filename)
 	if ok {
 		log.Infof("Using cache. filename=%s", filename)
 		return string(entry), true

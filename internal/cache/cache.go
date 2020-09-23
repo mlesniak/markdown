@@ -15,14 +15,20 @@ type Cache struct {
 	lock  sync.Mutex
 }
 
-func New() *Cache {
-	ch := Cache{
-		cache: make(map[string]Entry),
-	}
-	return &ch
+var once sync.Once
+var singleton *Cache
+
+func Get() *Cache {
+	once.Do(func() {
+		singleton = &Cache{
+			cache: make(map[string]Entry),
+		}
+	})
+
+	return singleton
 }
 
-func (c *Cache) Add(entry Entry) {
+func (c *Cache) AddEntry(entry Entry) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	c.cache[entry.Name] = entry
@@ -37,7 +43,7 @@ func (c *Cache) List() []string {
 	return keys
 }
 
-func (c *Cache) Get(name string) ([]byte, bool) {
+func (c *Cache) GetEntry(name string) ([]byte, bool) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	entry, ok := c.cache[name]

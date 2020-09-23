@@ -1,7 +1,11 @@
 package dropbox
 
 import (
+	"bytes"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/gommon/log"
+	"github.com/mlesniak/markdown/internal/cache"
+	"github.com/mlesniak/markdown/internal/markdown"
 	"strings"
 )
 
@@ -25,7 +29,7 @@ type entry struct {
 	Name string `json:"name"`
 }
 
-// New returns a new dropbox service.
+// Get returns a new dropbox service.
 func New(s Service) *Service {
 	if !strings.HasSuffix(s.RootDirectory, "/") {
 		panic("rootDirectory without / suffix:" + s.RootDirectory)
@@ -37,10 +41,10 @@ func New(s Service) *Service {
 
 func (s *Service) UpdateFiles(filenames ...string) {
 	for _, filename := range filenames {
-		go func() {
+		go func(filename string) {
 			s.Log.Infof("Adding to queue filename=%s", filename)
 			s.queue <- filename
-		}()
+		}(filename)
 	}
 }
 
@@ -50,6 +54,45 @@ func (s *Service) Start() {
 		for {
 			filename := <-s.queue
 			s.Log.Infof("Updating file %s", filename)
+			bs, err := s.Read(s.Log, filename)
+			if err != nil {
+				panic(err)
+			}
+			s.updateFile(filename, bs)
 		}
 	}()
+}
+
+// updateFile receives a markdown file, renders its HTML, updates the tag list
+// and updates the corresponding cache entry.
+func (s *Service) updateFile(filename string, data []byte) {
+	// Just to be sure we do not accidentally serve a non-public, but linked file.
+	if !isPublic(data) {
+		s.Log.Warnf("Preventing caching of non-public filename=%s", filename)
+		return
+	}
+
+	// Update tag list.
+	// tagList := utils.GetTags(data)
+	// tagsService.Update(filename, tagList)
+
+	// Render file.
+	html, _ := markdown.ToHTML(s.Log, data)
+
+	// Populate cache
+	log.Infof("Update cache for filename=%s", filename)
+	cache.Get().AddEntry(cache.Entry{
+		Name: filename,
+		Data: []byte(html),
+	})
+}
+
+// Tag name to define markdown files which are allowed to be published.
+const publishTag = "#public"
+
+// isPublic checks if a file is allowed to be displayed: Since we are only
+// downloading markdown files, we enforce that all files must contain the tag
+// `publishTag` to be able to download it.
+func isPublic(bs []byte) bool {
+	return bytes.Contains(bs, []byte(publishTag))
 }

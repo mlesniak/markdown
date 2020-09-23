@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
@@ -22,17 +21,15 @@ const (
 	// Directory containing static files for website.
 	staticRoot = "static/"
 
-	rootFilename = "202009010520 index"
-
-	// Tag name to define markdown files which are allowed to be published.
-	publishTag = "#public"
+	rootFilename = "202009010520 index.md"
 )
 
 func main() {
 	log := initializeLogger()
 
+	// TODO use proper singletons here instead of services?
 	tagsService := tags.New()
-	cacheService := cache.New()
+	cacheService := cache.Get()
 	dropboxService := initializeDropboxStorage(log)
 	handlerService := handler.Handler{
 		Cache: cacheService,
@@ -73,7 +70,7 @@ func main() {
 
 	dropboxService.Start()
 	time.Sleep(1 * time.Second)
-	dropboxService.UpdateFiles(rootFilename, "202009010533 About me")
+	dropboxService.UpdateFiles(rootFilename, "202009010533 About me.md")
 
 	// Start server.
 	e.HideBanner = true
@@ -118,7 +115,7 @@ func initializeCache(e *echo.Echo, dropboxService *dropbox.Service, tagsService 
 	// 	func() {
 	// 		// Update backlinks.
 	// 		for _, name := range cacheService.List() {
-	// 			html, _ := cacheService.Get(name)
+	// 			html, _ := cacheService.GetEntry(name)
 	// 			links := utils.GetLinks(html)
 	// 			backlinkService.AddTargets(name, links)
 	// 		}
@@ -144,15 +141,8 @@ func initializeCache(e *echo.Echo, dropboxService *dropbox.Service, tagsService 
 //
 // 	// Populate cache
 // 	log.Infof("Update cache for filename=%s", filename)
-// 	cacheService.Add(cache.Entry{
+// 	cacheService.AddEntry(cache.Entry{
 // 		Name: filename,
 // 		Data: []byte(html),
 // 	})
 // }
-
-// isPublic checks if a file is allowed to be displayed: Since we are only
-// downloading markdown files, we enforce that all files must contain the tag
-// `publishTag` to be able to download it.
-func isPublic(bs []byte) bool {
-	return bytes.Contains(bs, []byte(publishTag))
-}
