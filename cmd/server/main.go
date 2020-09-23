@@ -44,17 +44,14 @@ func main() {
 	e.Logger = logger
 
 	// Initialize services.
-	dropboxService := initDropboxStorage()
 	tagsService := tags.New()
-	backlinksService := backlinks.New()
 	cacheService := cache.New()
+	dropboxService := initDropboxStorage()
+	backlinksService := backlinks.New()
 	handlerService := handler.Handler{
 		Cache:     cacheService,
 		Backlinks: backlinksService,
 	}
-
-	// Preload files.
-	go initializeCache(dropboxService, e, tagsService, cacheService, backlinksService)
 
 	// Configure middlewares.
 	e.Use(handler.BuildVersionHeader())
@@ -67,7 +64,7 @@ func main() {
 	e.Static("/static", staticRoot)
 	e.Static("/download", downloadRoot)
 
-	// Serve dynamic files.
+	// Serve normal markdown files.
 	e.GET("/", func(c echo.Context) error {
 		c.SetParamNames("name")
 		c.SetParamValues(rootFilename)
@@ -80,7 +77,7 @@ func main() {
 	if apiToken != "" {
 		e.DELETE("/tag/"+apiToken, func(c echo.Context) error {
 			tagsService.Clear()
-			go initializeCache(dropboxService, e, tagsService, cacheService, backlinksService)
+			go initializeCache(e, dropboxService, tagsService, cacheService, backlinksService)
 			return c.String(http.StatusOK, "Started cache reset")
 		})
 	}
@@ -93,23 +90,13 @@ func main() {
 		// TODO Handle backlink update here.
 	}))
 
+	// Preload files.
+	go initializeCache(e, dropboxService, tagsService, cacheService, backlinksService)
+
 	// Start server.
 	e.HideBanner = true
 	e.HidePort = true
 	e.Logger.Fatal(e.Start(":8080"))
-}
-
-func initializeCache(dropboxService *dropbox.Service, e *echo.Echo, tagsService *tags.Tags, cacheService *cache.Cache, backlinkService *backlinks.Backlinks) {
-	dropboxService.PreloadCache(e.Logger, func(log echo.Logger, filename string, data []byte) {
-		updateFile(log, filename, data, tagsService, cacheService)
-	}, func() {
-		// Update backlinks.
-		for _, name := range cacheService.List() {
-			html, _ := cacheService.Get(name)
-			links := utils.GetLinks(html)
-			backlinkService.AddTargets(name, links)
-		}
-	})
 }
 
 // initDropboxStorage initializes the dropbox service by defining the
@@ -134,6 +121,22 @@ func initDropboxStorage() *dropbox.Service {
 	return dropbox.New(dropboxAppSecret, dropboxToken, "notes/", preloads)
 }
 
+func initializeCache(e *echo.Echo, dropboxService *dropbox.Service, tagsService *tags.Tags, cacheService *cache.Cache, backlinkService *backlinks.Backlinks) {
+	dropboxService.PreloadCache(e.Logger,
+		func(log echo.Logger, filename string, data []byte) {
+			updateFile(log, filename, data, tagsService, cacheService)
+		},
+		func() {
+			// Update backlinks.
+			for _, name := range cacheService.List() {
+				html, _ := cacheService.Get(name)
+				links := utils.GetLinks(html)
+				backlinkService.AddTargets(name, links)
+			}
+		})
+}
+
+// TODO Move this to a more appropriate place.
 // updateFile receives a markdown file, renders its HTML, updates the tag list
 // and updates the corresponding cache entry.
 func updateFile(log echo.Logger, filename string, data []byte, tagsService *tags.Tags, cacheService *cache.Cache) {
