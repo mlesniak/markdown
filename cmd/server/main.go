@@ -111,7 +111,7 @@ func initDropboxStorage() *dropbox.Service {
 		panic("No dropbox app secret set, aborting.")
 	}
 
-	// TODO configurable list
+	// TODO This is the wrong place for this...
 	preloads := []string{
 		"202009010520 index",
 		"202009010533 About me",
