@@ -34,7 +34,7 @@ func New(s Service) *Service {
 	return &s
 }
 
-func (s *Service) UpdateCache(filenames ...string) {
+func (s *Service) UpdateCache(filenames []string) {
 	fileBuffers := s.loadFiles(filenames)
 	tags := s.processFiles(fileBuffers)
 	s.generateTagPages(tags)

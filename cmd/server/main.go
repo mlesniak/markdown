@@ -10,10 +10,12 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/ziflex/lecho/v2"
 	"os"
+	"time"
 )
 
 func main() {
 	const rootFilename = "202009010520 index.md"
+	rootFiles := []string{rootFilename, "202009010533 About me.md"}
 
 	log := initializeLogger()
 	dropboxService := initializeDropbox(log)
@@ -29,22 +31,32 @@ func main() {
 	})
 	e.GET("/:name", handler.ContentHandler)
 
+	// Prevent cache updates every time we change a file
+	var timer *time.Timer
+	update := false
+	e.POST("/dropbox/webhook", dropboxService.WebhookHandler(func() {
+		if timer == nil {
+			dropboxService.UpdateCache(rootFiles)
+
+			// Catch all intermediate requests from dropbox.
+			baseDuration := "1m"
+			timer := time.NewTimer(utils.MustParseDuration(baseDuration))
+			go func() {
+				<-timer.C
+				if update {
+					dropboxService.UpdateCache(rootFiles)
+				}
+				timer = nil
+				update = false
+			}()
+		} else {
+			update = true
+		}
+	}))
 	e.GET("/dropbox/webhook", dropboxService.HandleChallenge)
 
-	// lastUpdate := time.Now()
-	e.POST("/dropbox/webhook", dropboxService.WebhookHandler(func() {
-		// waitDuration := utils.MustParseDuration("1m")
-		// if lastUpdate.Add(waitDuration).Before(time.Now()) {
-		// 	log.Infof("Ignoring dropbox update call, since %v has not passed.", waitDuration)
-		// 	return
-		// }
-		// lastUpdate = time.Now()
-
-		// We intentionally update the whole cache.
-		dropboxService.UpdateCache(rootFilename, "202009010533 About me.md")
-	}))
-
-	dropboxService.UpdateCache(rootFilename, "202009010533 About me.md")
+	e.Logger.Info("Initial cache storage starting...")
+	dropboxService.UpdateCache(rootFiles)
 
 	e.Logger.Info("Starting to listen for requests")
 	e.Logger.Fatal(e.Start(":8080"))
