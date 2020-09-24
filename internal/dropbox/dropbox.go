@@ -79,7 +79,7 @@ func (s *Service) convert(filename string, data []byte) []byte {
 	tags.Get().Update(filename, tagList)
 
 	s.Log.Infof("Converting markdown to HTML for filename=%s", filename)
-	html, _ := markdown.ToHTML(s.Log, data)
+	html, _ := markdown.ToHTML(s.Log, filename, data)
 
 	s.Log.Infof("Update cache for filename=%s", filename)
 	cache.Get().AddEntry(cache.Entry{

@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func ToHTML(log echo.Logger, data []byte) (string, error) {
+func ToHTML(log echo.Logger, filename string, data []byte) (string, error) {
 	// Perform various pre-processing steps on the markdown.
 	markdown := processRawMarkdown(data)
 	titleLine := title(markdown)
@@ -28,6 +28,7 @@ func ToHTML(log echo.Logger, data []byte) (string, error) {
 	html = strings.ReplaceAll(string(bsTemplate), "{{content}}", html)
 	html = strings.ReplaceAll(html, "{{title}}", titleLine)
 	html = strings.ReplaceAll(html, "{{build}}", buildInformation())
+	html = strings.ReplaceAll(html, "{{backlinks}}", generateBacklinkHTML(filename))
 
 	return html, nil
 }

@@ -7,10 +7,16 @@ type Backlinks struct {
 	links map[string]filename
 }
 
-func New() *Backlinks {
-	return &Backlinks{
+var singleton *Backlinks
+
+func init() {
+	singleton = &Backlinks{
 		links: make(map[string]filename),
 	}
+}
+
+func Get() *Backlinks {
+	return singleton
 }
 
 // For debugging
