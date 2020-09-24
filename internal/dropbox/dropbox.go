@@ -3,7 +3,6 @@ package dropbox
 import (
 	"bytes"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/gommon/log"
 	"github.com/mlesniak/markdown/internal/cache"
 	"github.com/mlesniak/markdown/internal/markdown"
 	"strings"
@@ -49,7 +48,7 @@ func (s *Service) Start() {
 	go func() {
 		for {
 			entry := <-s.queue
-			s.processQueueEntry(entry)
+			go s.processQueueEntry(entry)
 		}
 	}()
 }
@@ -61,18 +60,18 @@ func (s *Service) processQueueEntry(entry queueEntry) {
 	if err != nil {
 		panic(err)
 	}
-	s.convert(filename, bs)
-	entry.finalizer(bs)
+	bsHTML := s.convert(filename, bs)
+	entry.finalizer(bsHTML)
 }
 
 // convert receives a markdown file, renders its HTML, updates the tag list
 // and updates the corresponding cache entry.
 // TODO Is this the right position?
-func (s *Service) convert(filename string, data []byte) {
+func (s *Service) convert(filename string, data []byte) []byte {
 	// Just to be sure we do not accidentally serve a non-public, but linked file.
 	if !isPublic(data) {
 		s.Log.Warnf("Preventing caching of non-public filename=%s", filename)
-		return
+		return nil
 	}
 
 	// Update tag list.
@@ -80,14 +79,16 @@ func (s *Service) convert(filename string, data []byte) {
 	// tagsService.Update(filename, tagList)
 
 	// Render file.
-	log.Infof("Converting markdown to HTML for filename=%s", filename)
+	s.Log.Infof("Converting markdown to HTML for filename=%s", filename)
 	html, _ := markdown.ToHTML(s.Log, data)
 
-	log.Infof("Update cache for filename=%s", filename)
+	s.Log.Infof("Update cache for filename=%s", filename)
 	cache.Get().AddEntry(cache.Entry{
 		Name: filename,
 		Data: []byte(html),
 	})
+
+	return []byte(html)
 }
 
 // isPublic checks if a file is allowed to be displayed by enforcing

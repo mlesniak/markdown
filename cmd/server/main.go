@@ -69,7 +69,7 @@ func main() {
 
 	dropboxService.Start()
 	// TODO Use recursive preload here
-	dropboxService.PreloadCache(e.Logger, rootFilename, "202009010533 About me.md")
+	dropboxService.PreloadCache(rootFilename, "202009010533 About me.md")
 	// dropboxService.UpdateFile(rootFilename, "202009010533 About me.md")
 
 	// Start server.
@@ -84,6 +84,7 @@ func initializeLogger() *lecho.Logger {
 			zerolog.ConsoleWriter{
 				Out: os.Stderr,
 				PartsOrder: []string{
+					zerolog.LevelFieldName,
 					zerolog.TimestampFieldName,
 					zerolog.MessageFieldName,
 				},
