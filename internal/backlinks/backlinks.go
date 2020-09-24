@@ -1,17 +1,17 @@
 package backlinks
 
-type filename = map[string]struct{}
+type parent = map[string]struct{}
 
 type Backlinks struct {
-	// Link from filename to list of files which are referencing it.
-	links map[string]filename
+	// Link from parent to list of files which are referencing it.
+	links map[string]parent
 }
 
 var singleton *Backlinks
 
 func init() {
 	singleton = &Backlinks{
-		links: make(map[string]filename),
+		links: make(map[string]parent),
 	}
 }
 
@@ -19,12 +19,7 @@ func Get() *Backlinks {
 	return singleton
 }
 
-// For debugging
-func (t *Backlinks) DebugGet() map[string]filename {
-	return t.links
-}
-
-func (t *Backlinks) GetLinks(filename string) []string {
+func (t *Backlinks) GetParents(filename string) []string {
 	mapFilenames, found := t.links[filename]
 	if !found {
 		return []string{}
@@ -37,11 +32,7 @@ func (t *Backlinks) GetLinks(filename string) []string {
 	return filenames
 }
 
-func (t *Backlinks) Clear() {
-	t.links = make(map[string]filename)
-}
-
-func (t *Backlinks) AddTargets(filename string, targets []string) {
+func (t *Backlinks) AddChildren(filename string, targets []string) {
 	for _, name := range targets {
 		// Race condition?
 		if t.links[name] == nil {

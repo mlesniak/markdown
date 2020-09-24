@@ -11,7 +11,7 @@ import (
 
 func generateBacklinkHTML(filename string) string {
 	buf := strings.Builder{}
-	links := backlinks.Get().GetLinks(filename)
+	links := backlinks.Get().GetParents(filename)
 	if len(links) > 0 {
 		// Sort links by timestamp (for now).
 		sort.Strings(links)

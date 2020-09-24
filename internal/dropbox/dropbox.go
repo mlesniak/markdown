@@ -101,7 +101,7 @@ func (s *Service) processFiles(fileBuffers map[string][]byte) map[string][]strin
 		}
 
 		bls := backlinks.GetLinks(bs)
-		backlinks.Get().AddTargets(filename, bls)
+		backlinks.Get().AddChildren(filename, bls)
 
 		html, _ := markdown.ToHTML(s.Log, filename, bs)
 		s.Log.Infof("Adding cache entry. filename=%s", filename)
