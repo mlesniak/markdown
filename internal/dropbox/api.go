@@ -13,7 +13,7 @@ import (
 // apiCallHeader generalizes different api calls to dropbox.
 //
 // Will later be non-public again after Refactoring.
-func (s *Service) apiCallHeader(log echo.Logger, url string, argument interface{}) ([]byte, error) {
+func (s *Service) apiCallHeader(url string, argument interface{}) ([]byte, error) {
 	// Create general request.
 	client := http.Client{}
 	client.Timeout = time.Second * 10
@@ -33,7 +33,7 @@ func (s *Service) apiCallHeader(log echo.Logger, url string, argument interface{
 	request.Header.Add("Dropbox-API-Arg", string(rawJson))
 
 	// Execute request.
-	log.Infof("Performing dropbox API call to %s with payload=%v", url, argument)
+	s.Log.Infof("Performing dropbox API call to %s with payload=%v", url, argument)
 	resp, err := client.Do(request)
 	if err != nil {
 		return nil, fmt.Errorf("unable to perform request: %s", err)

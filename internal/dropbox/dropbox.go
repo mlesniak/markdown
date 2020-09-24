@@ -3,10 +3,12 @@ package dropbox
 import (
 	"bytes"
 	"github.com/labstack/echo/v4"
+	"github.com/mlesniak/markdown/internal/backlinks"
 	"github.com/mlesniak/markdown/internal/cache"
 	"github.com/mlesniak/markdown/internal/markdown"
 	"github.com/mlesniak/markdown/internal/tags"
 	"github.com/mlesniak/markdown/internal/utils"
+	"regexp"
 	"strings"
 )
 
@@ -58,12 +60,12 @@ func (s *Service) StartCacheQueue() {
 func (s *Service) processQueueEntry(entry queueEntry) {
 	filename := entry.filename
 	s.Log.Infof("Updating file %s", filename)
-	bs, err := s.Read(s.Log, filename)
-	if err != nil {
-		panic(err)
-	}
-	bsHTML := s.convert(filename, bs)
-	entry.finalizer(bsHTML)
+	// bs, err := s.Read(s.Log, filename)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// bsHTML := s.convert(filename, bs)
+	// entry.finalizer(bsHTML)
 }
 
 // convert receives a markdown file, renders its HTML, updates the tag list
@@ -88,6 +90,93 @@ func (s *Service) convert(filename string, data []byte) []byte {
 	})
 
 	return []byte(html)
+}
+
+func (s *Service) PreloadCache(filenames ...string) {
+	visitedFiles := make(map[string]struct{})
+	queue := filenames
+
+	// TODO Parallelize
+	fileBuffers := make(map[string][]byte)
+	for len(queue) > 0 {
+		filename := queue[0]
+		queue = queue[1:]
+
+		if _, visited := visitedFiles[filename]; visited {
+			continue
+		}
+		visitedFiles[filename] = struct{}{}
+
+		s.Log.Infof("Reading file. filename=%s", filename)
+		bs, err := s.Read(filename)
+		if err != nil {
+			s.Log.Infof("File found found. filename=%s", filename)
+			continue
+		}
+
+		if !isPublic(bs) {
+			s.Log.Warnf("Preventing caching of non-public file. filename=%s", filename)
+			continue
+		}
+
+		links := getLinks(bs)
+		queue = append(queue, links...)
+
+		fileBuffers[filename] = bs
+	}
+
+	s.Log.Infof("Queued: %d files", len(fileBuffers))
+
+	for filename, bs := range fileBuffers {
+		ts := getTags(bs)
+		tags.Get().Update(filename, ts)
+
+		bls := getLinks(bs)
+		backlinks.Get().AddTargets(filename, bls)
+
+		html, _ := markdown.ToHTML(s.Log, filename, bs)
+		s.Log.Infof("Adding cache entry. filename=%s", filename)
+		cache.Get().AddEntry(cache.Entry{
+			Name: filename,
+			Data: []byte(html),
+		})
+	}
+}
+
+func getLinks(data []byte) []string {
+	markdown := string(data)
+	regex := regexp.MustCompile(`\[\[(.*?)\]\]`)
+
+	links := []string{}
+
+	submatches := regex.FindAllStringSubmatch(markdown, -1)
+	for _, matches := range submatches {
+		link := matches[1]
+		if !strings.HasSuffix(link, ".md") {
+			link = link + ".md"
+		}
+		links = append(links, link)
+	}
+
+	return links
+}
+
+func getTags(data []byte) []string {
+	markdown := string(data)
+	regex := regexp.MustCompile(` *(#\w+)`)
+	matches := regex.FindAllString(markdown, -1)
+
+	tags := []string{}
+
+	for _, tag := range matches {
+		if tag != "" {
+			// Triming is easier than using the matcher's group.
+			tag = strings.Trim(tag, " \n\r\t")
+			tags = append(tags, tag)
+		}
+	}
+
+	return tags
 }
 
 // isPublic checks if a file is allowed to be displayed by enforcing

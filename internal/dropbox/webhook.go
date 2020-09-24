@@ -104,9 +104,9 @@ func (s *Service) validSignature(c echo.Context) bool {
 }
 
 func (s *Service) performCacheUpdate(log echo.Logger, entries []entry, updater Updater) {
-	for _, e := range entries {
-		log.Infof("Updating cache entry. filename=%s", e.Name)
-		bs, _ := s.Read(log, e.Name)
-		go updater(log, e.Name, bs)
-	}
+	// for _, e := range entries {
+	// 	log.Infof("Updating cache entry. filename=%s", e.Name)
+	// 	bs, _ := s.Read(log, e.Name)
+	// 	go updater(log, e.Name, bs)
+	// }
 }
