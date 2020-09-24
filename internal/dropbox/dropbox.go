@@ -35,10 +35,15 @@ func New(s Service) *Service {
 }
 
 func (s *Service) UpdateCache(filenames ...string) {
+	fileBuffers := s.loadFiles(filenames)
+	tags := s.processFiles(fileBuffers)
+	s.generateTagPages(tags)
+}
+
+func (s *Service) loadFiles(filenames []string) map[string][]byte {
+	fileBuffers := make(map[string][]byte)
 	visitedFiles := make(map[string]struct{})
 	queue := filenames
-
-	fileBuffers := make(map[string][]byte)
 	for len(queue) > 0 {
 		filename := queue[0]
 		queue = queue[1:]
@@ -66,7 +71,22 @@ func (s *Service) UpdateCache(filenames ...string) {
 		fileBuffers[filename] = bs
 	}
 	s.Log.Infof("Queued: %d files", len(fileBuffers))
+	return fileBuffers
+}
 
+func (s *Service) generateTagPages(tagMap map[string][]string) {
+	for tag, filenames := range tagMap {
+		tagName := "tag-" + tag[1:]
+		s.Log.Infof("Adding tag to cache. filename=%s", tagName)
+		bs := tags.GenerateTagPage(s.Log, tag, filenames)
+		cache.Get().AddEntry(cache.Entry{
+			Name: tagName,
+			Data: bs,
+		})
+	}
+}
+
+func (s *Service) processFiles(fileBuffers map[string][]byte) map[string][]string {
 	tagMap := make(map[string][]string)
 	for filename, bs := range fileBuffers {
 		ts := utils.GetTags(bs)
@@ -90,16 +110,7 @@ func (s *Service) UpdateCache(filenames ...string) {
 			Data: []byte(html),
 		})
 	}
-
-	for tag, filenames := range tagMap {
-		tagName := "tag-" + tag[1:]
-		s.Log.Infof("Adding tag to cache. filename=%s", tagName)
-		bs := tags.GenerateTagPage(s.Log, tag, filenames)
-		cache.Get().AddEntry(cache.Entry{
-			Name: tagName,
-			Data: bs,
-		})
-	}
+	return tagMap
 }
 
 // isPublic checks if a file is allowed to be displayed by enforcing
