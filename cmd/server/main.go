@@ -9,6 +9,7 @@ import (
 	"github.com/mlesniak/markdown/internal/dropbox"
 	"github.com/mlesniak/markdown/internal/handler"
 	"github.com/mlesniak/markdown/internal/tags"
+	"github.com/rs/zerolog"
 	"github.com/ziflex/lecho/v2"
 	"os"
 )
@@ -41,6 +42,8 @@ func main() {
 		Logger: log,
 	}))
 	e.Logger = log
+	e.Logger.SetHeader("")
+	e.Logger.Info("")
 
 	// Serve static and downloadable files.
 	e.Static("/static", staticRoot)
@@ -76,14 +79,28 @@ func main() {
 }
 
 func initializeLogger() *lecho.Logger {
-	logger := lecho.New(
+	if os.Getenv("LOCAL") != "" {
+		return lecho.New(
+			zerolog.ConsoleWriter{
+				Out: os.Stderr,
+				PartsOrder: []string{
+					zerolog.TimestampFieldName,
+					zerolog.MessageFieldName,
+				},
+			},
+			lecho.WithLevel(log.INFO),
+			lecho.WithTimestamp(),
+			lecho.WithCallerWithSkipFrameCount(3),
+		)
+	}
+
+	return lecho.New(
 		os.Stdout,
 		lecho.WithLevel(log.INFO),
 		lecho.WithTimestamp(),
 		lecho.WithCallerWithSkipFrameCount(3),
 		lecho.WithField("commit", handler.BuildInformation()),
 	)
-	return logger
 }
 
 func initializeDropboxStorage(log echo.Logger) *dropbox.Service {
