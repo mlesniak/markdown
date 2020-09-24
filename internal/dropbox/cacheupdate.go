@@ -6,6 +6,7 @@ import (
 	"github.com/mlesniak/markdown/internal/cache"
 	"github.com/mlesniak/markdown/internal/utils"
 	"sync"
+	"time"
 )
 
 // Updater describes a function which is called when a file has been changed
@@ -13,6 +14,8 @@ import (
 type Updater func(log echo.Logger, filename string, data []byte)
 
 func (s *Service) PreloadCache(filenames ...string) {
+	now := time.Now()
+
 	s.loadCache(filenames)
 
 	// All files have been loaded once. Scan them to create backlink map and
@@ -27,6 +30,8 @@ func (s *Service) PreloadCache(filenames ...string) {
 
 	s.Log.Info("Recaching with computed backlinks")
 	s.loadCache(filenames)
+
+	s.Log.Infof("Rebuilding site took %d ms", time.Now().Sub(now).Milliseconds())
 }
 
 func (s *Service) loadCache(filenames []string) {
