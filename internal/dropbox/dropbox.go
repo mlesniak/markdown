@@ -2,6 +2,7 @@ package dropbox
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/labstack/echo/v4"
 	"github.com/mlesniak/markdown/internal/backlinks"
 	"github.com/mlesniak/markdown/internal/cache"
@@ -9,6 +10,7 @@ import (
 	"github.com/mlesniak/markdown/internal/tags"
 	"github.com/mlesniak/markdown/internal/utils"
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -124,12 +126,20 @@ func (s *Service) PreloadCache(filenames ...string) {
 
 		fileBuffers[filename] = bs
 	}
-
 	s.Log.Infof("Queued: %d files", len(fileBuffers))
 
+	tags := make(map[string][]string)
 	for filename, bs := range fileBuffers {
 		ts := getTags(bs)
-		tags.Get().Update(filename, ts)
+		for _, t := range ts {
+			_, found := tags[t]
+			if !found {
+				tags[t] = []string{filename}
+			} else {
+				// Does this work on empty, too?
+				tags[t] = append(tags[t], filename)
+			}
+		}
 
 		bls := getLinks(bs)
 		backlinks.Get().AddTargets(filename, bls)
@@ -139,6 +149,16 @@ func (s *Service) PreloadCache(filenames ...string) {
 		cache.Get().AddEntry(cache.Entry{
 			Name: filename,
 			Data: []byte(html),
+		})
+	}
+
+	for tag, filenames := range tags {
+		tagName := "tag-" + tag[1:]
+		s.Log.Infof("Adding tag to cache. filename=%s", tagName)
+		bs := tagHTML(s.Log, tag, filenames)
+		cache.Get().AddEntry(cache.Entry{
+			Name: tagName,
+			Data: bs,
 		})
 	}
 
@@ -188,4 +208,51 @@ func getTags(data []byte) []string {
 func isPublic(bs []byte) bool {
 	publicTag := "#public"
 	return bytes.Contains(bs, []byte(publicTag))
+}
+
+func tagHTML(log echo.Logger, tag string, filenames []string) []byte {
+	// Take first h1 of file from cache?
+	// Sort by this then?
+	titlesFilenames := make(map[string]string)
+	for _, filename := range filenames {
+		parts := strings.SplitN(filename, " ", 2)
+		var titleName string
+		if len(parts) < 2 {
+			titleName = parts[0]
+		} else {
+			titleName = parts[1]
+		}
+		// Remove .md suffix
+		titleName = titleName[:len(titleName)-3]
+		titlesFilenames[titleName] = filename
+	}
+
+	// Get list and sort.
+	titles := []string{}
+	for k, _ := range titlesFilenames {
+		titles = append(titles, k)
+	}
+	sort.Slice(titles, func(i, j int) bool {
+		return strings.ToLower(titles[i]) < strings.ToLower(titles[j])
+	})
+
+	tags := strings.Builder{}
+	for _, title := range titles {
+		displayTitle := utils.AutoCaptialize(title)
+
+		name := titlesFilenames[title]
+		link := fmt.Sprintf(`- <a href="/%s">%s</a>`, name, displayTitle)
+		tags.WriteString("\n")
+		tags.WriteString(link)
+	}
+	content := tags.String()
+
+	// Create dynamic markdown.
+	md := []byte(fmt.Sprintf("# Articles tagged %s\n\n%s", tag, content))
+
+	html, _ := markdown.ToHTML(log, "", md)
+	html = strings.ReplaceAll(html, "{{title}}", tag)
+	html = strings.ReplaceAll(html, "{{backlinks}}", "")
+
+	return []byte(html)
 }

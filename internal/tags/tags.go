@@ -49,6 +49,16 @@ func (t *Tags) Update(filename string, tags []string) {
 	t.tags[filename] = tm
 }
 
+func (t *Tags) Files() []string {
+	filenames := []string{}
+
+	for filename, _ := range t.tags {
+		filenames = append(filenames, filename)
+	}
+
+	return filenames
+}
+
 func (t *Tags) List(tag string) []string {
 	filenames := []string{}
 

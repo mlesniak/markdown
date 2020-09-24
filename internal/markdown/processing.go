@@ -40,6 +40,9 @@ func convertWikiLinks(markdown string) string {
 		} else {
 			displayedName = filenameParts[1]
 		}
+		if !strings.Contains(fileLinkName, ".") {
+			fileLinkName = fileLinkName + ".md"
+		}
 		markdownLink := fmt.Sprintf(`[%s](/%s)`, displayedName, fileLinkName)
 		markdown = strings.ReplaceAll(markdown, wikiLink, markdownLink)
 	}
@@ -51,7 +54,7 @@ func convertTags(markdown string) string {
 	linkTags := utils.GetTags([]byte(markdown))
 
 	for _, tag := range linkTags {
-		link := fmt.Sprintf(`<a href="/tag/%s" class="tag">%s </a>`, tag[1:], tag)
+		link := fmt.Sprintf(`<a href="/tag-%s" class="tag">%s </a>`, tag[1:], tag)
 		markdown = strings.ReplaceAll(markdown, tag, link)
 	}
 
