@@ -36,7 +36,6 @@ func (s *Service) finalizer(visited map[string]struct{}, filename string, wg *sy
 		defer wg.Done()
 
 		links := utils.GetLinks(data)
-		s.Log.Infof("For %s, found links=%v", filename, links)
 		for _, link := range links {
 			if _, found := visited[link]; found {
 				continue
