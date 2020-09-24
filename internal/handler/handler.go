@@ -14,21 +14,16 @@ const (
 	staticRoot = "static/"
 )
 
-type Handler struct {
-	Cache *cache.Cache
-	// Backlinks *backlinks.Backlinks
-}
-
-// Handle is the default handler for all non-static content. It uses the parameter name
+// ContentHandler is the default handler for all non-static content. It uses the parameter name
 // to download the correct markdown file from dropbox, perform various transformations
 // and convert it to html.
-func (h *Handler) Handle(c echo.Context) error {
+func ContentHandler(c echo.Context) error {
 	log := c.Logger()
 	filename := c.Param("name")
 
 	// Check if filename exists in static root directory. This is secure without checking
 	// for parent paths (..) etc since we run in a docker container.
-	ok := h.serveStaticFile(c, filename)
+	ok := serveStaticFile(c, filename)
 	if ok {
 		return nil
 	}
@@ -37,8 +32,8 @@ func (h *Handler) Handle(c echo.Context) error {
 	c.Response().Header().Add("Content-Type", "text/html; charset=UTF-8")
 
 	// Check if the file is in cache and can be used.
-	filename = h.fixFilename(filename)
-	html, inCache := h.useCache(log, filename)
+	filename = fixFilename(filename)
+	html, inCache := useCache(log, filename)
 	if inCache {
 		// TODO Backlink handling in cache, not here...
 		// backLinkHTML := h.generateBacklinkHTML(filename)
@@ -90,7 +85,7 @@ func visibleLink(filename string) string {
 
 // serveStaticFile is a special handler to service static files in the root directory
 // which are actually stored in the static folder.
-func (h *Handler) serveStaticFile(c echo.Context, filename string) bool {
+func serveStaticFile(c echo.Context, filename string) bool {
 	log := c.Logger()
 
 	if filename != "" {
@@ -106,8 +101,8 @@ func (h *Handler) serveStaticFile(c echo.Context, filename string) bool {
 }
 
 // useCache tries to use the cache entry to serve a precomputed and stored file.
-func (h *Handler) useCache(log echo.Logger, filename string) (string, bool) {
-	entry, ok := h.Cache.GetEntry(filename)
+func useCache(log echo.Logger, filename string) (string, bool) {
+	entry, ok := cache.Get().GetEntry(filename)
 	if ok {
 		log.Infof("Using cache. filename=%s", filename)
 		return string(entry), true
