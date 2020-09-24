@@ -10,6 +10,13 @@ import (
 	"net/http"
 )
 
+type Updater func()
+
+type entry struct {
+	Tag  string `json:".tag"`
+	Name string `json:"name"`
+}
+
 // HandleChallenge returns the dropbox challenge which is used to check
 // the webhook dropbox api.
 func (s *Service) HandleChallenge(c echo.Context) error {
@@ -69,7 +76,7 @@ func (s *Service) WebhookHandler(updater Updater) echo.HandlerFunc {
 				}
 				var es entries
 				json.Unmarshal(bs, &es)
-				s.performCacheUpdate(log, es.Entries, updater)
+				updater()
 				s.cursor = es.Cursor
 			}()
 		}
@@ -101,12 +108,4 @@ func (s *Service) validSignature(c echo.Context) bool {
 
 	// Compare.
 	return hmac.Equal(submittedMAC, expectedMAC)
-}
-
-func (s *Service) performCacheUpdate(log echo.Logger, entries []entry, updater Updater) {
-	// for _, e := range entries {
-	// 	log.Infof("Updating cache entry. filename=%s", e.Name)
-	// 	bs, _ := s.Read(log, e.Name)
-	// 	go updater(log, e.Name, bs)
-	// }
 }

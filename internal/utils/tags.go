@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// GetTags is defined here to prevent cyclic import.
 func GetTags(data []byte) []string {
 	markdown := string(data)
 	regex := regexp.MustCompile(` *(#\w+)`)

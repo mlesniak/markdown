@@ -6,7 +6,7 @@ import (
 	"github.com/labstack/gommon/log"
 	"github.com/mlesniak/markdown/internal/dropbox"
 	"github.com/mlesniak/markdown/internal/handler"
-	"github.com/mlesniak/markdown/internal/tags"
+	"github.com/mlesniak/markdown/internal/utils"
 	"github.com/rs/zerolog"
 	"github.com/ziflex/lecho/v2"
 	"os"
@@ -28,15 +28,14 @@ func main() {
 		return handler.ContentHandler(c)
 	})
 	e.GET("/:name", handler.ContentHandler)
-	e.GET("/tag/:tag", tags.Get().HandleTag)
 
 	e.GET("/dropbox/webhook", dropboxService.HandleChallenge)
-	e.POST("/dropbox/webhook", dropboxService.WebhookHandler(func(log echo.Logger, filename string, data []byte) {
-		dropboxService.PreloadCache(rootFilename, "202009010533 About me.md")
+	e.POST("/dropbox/webhook", dropboxService.WebhookHandler(func() {
+		// We intentionally update the whole cache.
+		dropboxService.UpdateCache(rootFilename, "202009010533 About me.md")
 	}))
 
-	dropboxService.StartCacheQueue()
-	dropboxService.PreloadCache(rootFilename, "202009010533 About me.md")
+	dropboxService.UpdateCache(rootFilename, "202009010533 About me.md")
 
 	e.Logger.Info("Starting to listen for requests")
 	e.Logger.Fatal(e.Start(":8080"))
@@ -77,7 +76,7 @@ func initializeLogger() *lecho.Logger {
 		lecho.WithLevel(log.INFO),
 		lecho.WithTimestamp(),
 		lecho.WithCallerWithSkipFrameCount(3),
-		lecho.WithField("commit", handler.BuildInformation()),
+		lecho.WithField("commit", utils.BuildInformation()),
 	)
 }
 

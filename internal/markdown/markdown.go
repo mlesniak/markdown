@@ -3,6 +3,7 @@ package markdown
 import (
 	"errors"
 	"github.com/labstack/echo/v4"
+	"github.com/mlesniak/markdown/internal/utils"
 	"github.com/russross/blackfriday/v2"
 	"io/ioutil"
 	"strings"
@@ -27,7 +28,7 @@ func ToHTML(log echo.Logger, filename string, data []byte) (string, error) {
 	}
 	html = strings.ReplaceAll(string(bsTemplate), "{{content}}", html)
 	html = strings.ReplaceAll(html, "{{title}}", titleLine)
-	html = strings.ReplaceAll(html, "{{build}}", buildInformation())
+	html = strings.ReplaceAll(html, "{{build}}", utils.BuildInformation())
 	html = strings.ReplaceAll(html, "{{backlinks}}", generateBacklinkHTML(filename))
 
 	return html, nil

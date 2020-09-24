@@ -1,5 +1,4 @@
-// utils prevents cyclic imports between markdown and tags packages.
-package utils
+package backlinks
 
 import (
 	"regexp"

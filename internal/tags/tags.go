@@ -1,72 +1,55 @@
 package tags
 
 import (
+	"fmt"
+	"github.com/labstack/echo/v4"
+	"github.com/mlesniak/markdown/internal/markdown"
+	"github.com/mlesniak/markdown/internal/utils"
+	"sort"
 	"strings"
-	"sync"
 )
 
-type tags = map[string]struct{}
-
-type Tags struct {
-	tags map[string]tags
-}
-
-var singleton *Tags
-var once sync.Once
-
-func init() {
-	singleton = &Tags{
-		tags: make(map[string]tags),
-	}
-}
-
-func Get() *Tags {
-	once.Do(func() {
-		singleton = &Tags{
-			tags: make(map[string]tags),
+func GenerateTagPage(log echo.Logger, tag string, filenames []string) []byte {
+	titlesFilenames := make(map[string]string)
+	for _, filename := range filenames {
+		parts := strings.SplitN(filename, " ", 2)
+		var titleName string
+		if len(parts) < 2 {
+			titleName = parts[0]
+		} else {
+			titleName = parts[1]
 		}
+		// Remove .md suffix
+		titleName = titleName[:len(titleName)-3]
+		titlesFilenames[titleName] = filename
+	}
+
+	// Get list and sort.
+	titles := []string{}
+	for k, _ := range titlesFilenames {
+		titles = append(titles, k)
+	}
+	sort.Slice(titles, func(i, j int) bool {
+		return strings.ToLower(titles[i]) < strings.ToLower(titles[j])
 	})
 
-	return singleton
-}
+	tags := strings.Builder{}
+	for _, title := range titles {
+		displayTitle := utils.AutoCaptialize(title)
 
-func (t *Tags) Clear() {
-	t.tags = make(map[string]tags)
-}
-
-// TODO Rename this
-func (t *Tags) Update(filename string, tags []string) {
-	// Ignore adding tags.
-	if strings.HasPrefix(filename, "#") {
-		return
+		name := titlesFilenames[title]
+		link := fmt.Sprintf(`- <a href="/%s">%s</a>`, name, displayTitle)
+		tags.WriteString("\n")
+		tags.WriteString(link)
 	}
+	content := tags.String()
 
-	tm := make(map[string]struct{})
-	for _, tag := range tags {
-		tm[tag] = struct{}{}
-	}
+	// Create dynamic markdown.
+	md := []byte(fmt.Sprintf("# Articles tagged %s\n\n%s", tag, content))
 
-	t.tags[filename] = tm
-}
+	html, _ := markdown.ToHTML(log, "", md)
+	html = strings.ReplaceAll(html, "{{title}}", tag)
+	html = strings.ReplaceAll(html, "{{backlinks}}", "")
 
-func (t *Tags) Files() []string {
-	filenames := []string{}
-
-	for filename, _ := range t.tags {
-		filenames = append(filenames, filename)
-	}
-
-	return filenames
-}
-
-func (t *Tags) List(tag string) []string {
-	filenames := []string{}
-
-	for filename, tags := range t.tags {
-		if _, found := tags[tag]; found {
-			filenames = append(filenames, filename)
-		}
-	}
-
-	return filenames
+	return []byte(html)
 }

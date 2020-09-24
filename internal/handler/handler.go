@@ -30,17 +30,13 @@ func ContentHandler(c echo.Context) error {
 	c.Response().Header().Add("Content-Type", "text/html; charset=UTF-8")
 
 	// Check if the file is in cache and can be used.
-	// filename = fixFilename(filename)
 	html, inCache := useCache(log, filename)
 	if inCache {
-		// TODO Backlink handling in cache, not here...
-		// backLinkHTML := h.generateBacklinkHTML(filename)
-		// html = strings.ReplaceAll(html, "{{backlinks}}", backLinkHTML)
 		return c.String(http.StatusOK, html)
 	}
 
 	// This can only happen if we are starting, since otherwise the cache is filled.
-	log.Warn("File not in cache: %s", filename)
+	log.Warn("File not yet in cache: %s", filename)
 	return c.String(http.StatusNotFound, "File not found:"+filename)
 }
 

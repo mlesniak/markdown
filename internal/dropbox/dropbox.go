@@ -2,22 +2,14 @@ package dropbox
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/labstack/echo/v4"
 	"github.com/mlesniak/markdown/internal/backlinks"
 	"github.com/mlesniak/markdown/internal/cache"
 	"github.com/mlesniak/markdown/internal/markdown"
 	"github.com/mlesniak/markdown/internal/tags"
 	"github.com/mlesniak/markdown/internal/utils"
-	"regexp"
-	"sort"
 	"strings"
 )
-
-type queueEntry struct {
-	filename  string
-	finalizer func([]byte)
-}
 
 // Service contains the necessary data to access a dropbox.
 type Service struct {
@@ -31,12 +23,6 @@ type Service struct {
 
 	// Since we have only one account, the cursor is part of the service.
 	cursor string
-	queue  chan queueEntry
-}
-
-type entry struct {
-	Tag  string `json:".tag"`
-	Name string `json:"name"`
 }
 
 // Get returns a new dropbox service.
@@ -45,60 +31,13 @@ func New(s Service) *Service {
 		panic("rootDirectory without / suffix:" + s.RootDirectory)
 	}
 
-	s.queue = make(chan queueEntry)
 	return &s
 }
 
-func (s *Service) StartCacheQueue() {
-	s.Log.Info("Starting update queue watching...")
-	go func() {
-		for {
-			entry := <-s.queue
-			go s.processQueueEntry(entry)
-		}
-	}()
-}
-
-func (s *Service) processQueueEntry(entry queueEntry) {
-	filename := entry.filename
-	s.Log.Infof("Updating file %s", filename)
-	// bs, err := s.Read(s.Log, filename)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// bsHTML := s.convert(filename, bs)
-	// entry.finalizer(bsHTML)
-}
-
-// convert receives a markdown file, renders its HTML, updates the tag list
-// and updates the corresponding cache entry.
-// TODO Is this the right position?
-func (s *Service) convert(filename string, data []byte) []byte {
-	if !isPublic(data) {
-		s.Log.Warnf("Preventing caching of non-public filename=%s", filename)
-		return nil
-	}
-
-	tagList := utils.GetTags(data)
-	tags.Get().Update(filename, tagList)
-
-	s.Log.Infof("Converting markdown to HTML for filename=%s", filename)
-	html, _ := markdown.ToHTML(s.Log, filename, data)
-
-	s.Log.Infof("Update cache for filename=%s", filename)
-	cache.Get().AddEntry(cache.Entry{
-		Name: filename,
-		Data: []byte(html),
-	})
-
-	return []byte(html)
-}
-
-func (s *Service) PreloadCache(filenames ...string) {
+func (s *Service) UpdateCache(filenames ...string) {
 	visitedFiles := make(map[string]struct{})
 	queue := filenames
 
-	// TODO Parallelize
 	fileBuffers := make(map[string][]byte)
 	for len(queue) > 0 {
 		filename := queue[0]
@@ -121,27 +60,27 @@ func (s *Service) PreloadCache(filenames ...string) {
 			continue
 		}
 
-		links := getLinks(bs)
+		links := backlinks.GetLinks(bs)
 		queue = append(queue, links...)
 
 		fileBuffers[filename] = bs
 	}
 	s.Log.Infof("Queued: %d files", len(fileBuffers))
 
-	tags := make(map[string][]string)
+	tagMap := make(map[string][]string)
 	for filename, bs := range fileBuffers {
-		ts := getTags(bs)
+		ts := utils.GetTags(bs)
 		for _, t := range ts {
-			_, found := tags[t]
+			_, found := tagMap[t]
 			if !found {
-				tags[t] = []string{filename}
+				tagMap[t] = []string{filename}
 			} else {
 				// Does this work on empty, too?
-				tags[t] = append(tags[t], filename)
+				tagMap[t] = append(tagMap[t], filename)
 			}
 		}
 
-		bls := getLinks(bs)
+		bls := backlinks.GetLinks(bs)
 		backlinks.Get().AddTargets(filename, bls)
 
 		html, _ := markdown.ToHTML(s.Log, filename, bs)
@@ -152,10 +91,10 @@ func (s *Service) PreloadCache(filenames ...string) {
 		})
 	}
 
-	for tag, filenames := range tags {
+	for tag, filenames := range tagMap {
 		tagName := "tag-" + tag[1:]
 		s.Log.Infof("Adding tag to cache. filename=%s", tagName)
-		bs := tagHTML(s.Log, tag, filenames)
+		bs := tags.GenerateTagPage(s.Log, tag, filenames)
 		cache.Get().AddEntry(cache.Entry{
 			Name: tagName,
 			Data: bs,
@@ -163,92 +102,9 @@ func (s *Service) PreloadCache(filenames ...string) {
 	}
 }
 
-func getLinks(data []byte) []string {
-	markdown := string(data)
-	regex := regexp.MustCompile(`\[\[(.*?)\]\]`)
-
-	links := []string{}
-
-	submatches := regex.FindAllStringSubmatch(markdown, -1)
-	for _, matches := range submatches {
-		link := matches[1]
-		if !strings.HasSuffix(link, ".md") {
-			link = link + ".md"
-		}
-		links = append(links, link)
-	}
-
-	return links
-}
-
-func getTags(data []byte) []string {
-	markdown := string(data)
-	regex := regexp.MustCompile(` *(#\w+)`)
-	matches := regex.FindAllString(markdown, -1)
-
-	tags := []string{}
-
-	for _, tag := range matches {
-		if tag != "" {
-			// Triming is easier than using the matcher's group.
-			tag = strings.Trim(tag, " \n\r\t")
-			tags = append(tags, tag)
-		}
-	}
-
-	return tags
-}
-
 // isPublic checks if a file is allowed to be displayed by enforcing
 // the existence of a text string in each file.
 func isPublic(bs []byte) bool {
 	publicTag := "#public"
 	return bytes.Contains(bs, []byte(publicTag))
-}
-
-func tagHTML(log echo.Logger, tag string, filenames []string) []byte {
-	// Take first h1 of file from cache?
-	// Sort by this then?
-	titlesFilenames := make(map[string]string)
-	for _, filename := range filenames {
-		parts := strings.SplitN(filename, " ", 2)
-		var titleName string
-		if len(parts) < 2 {
-			titleName = parts[0]
-		} else {
-			titleName = parts[1]
-		}
-		// Remove .md suffix
-		titleName = titleName[:len(titleName)-3]
-		titlesFilenames[titleName] = filename
-	}
-
-	// Get list and sort.
-	titles := []string{}
-	for k, _ := range titlesFilenames {
-		titles = append(titles, k)
-	}
-	sort.Slice(titles, func(i, j int) bool {
-		return strings.ToLower(titles[i]) < strings.ToLower(titles[j])
-	})
-
-	tags := strings.Builder{}
-	for _, title := range titles {
-		displayTitle := utils.AutoCaptialize(title)
-
-		name := titlesFilenames[title]
-		link := fmt.Sprintf(`- <a href="/%s">%s</a>`, name, displayTitle)
-		tags.WriteString("\n")
-		tags.WriteString(link)
-	}
-	content := tags.String()
-
-	// Create dynamic markdown.
-	md := []byte(fmt.Sprintf("# Articles tagged %s\n\n%s", tag, content))
-
-	html, _ := markdown.ToHTML(log, "", md)
-	html = strings.ReplaceAll(html, "{{title}}", tag)
-	html = strings.ReplaceAll(html, "{{backlinks}}", "")
-
-	return []byte(html)
 }

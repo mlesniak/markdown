@@ -1,11 +1,11 @@
-package markdown
+package utils
 
 import (
 	"os"
 	"strings"
 )
 
-func buildInformation() string {
+func BuildInformation() string {
 	buildInformation := os.Getenv("COMMIT")
 	buildInformation = strings.Trim(buildInformation, " \n")
 	if buildInformation == "" {
