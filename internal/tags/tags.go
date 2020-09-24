@@ -2,6 +2,7 @@ package tags
 
 import (
 	"strings"
+	"sync"
 )
 
 type tags = map[string]struct{}
@@ -10,16 +11,30 @@ type Tags struct {
 	tags map[string]tags
 }
 
-func New() *Tags {
-	return &Tags{
+var singleton *Tags
+var once sync.Once
+
+func init() {
+	singleton = &Tags{
 		tags: make(map[string]tags),
 	}
+}
+
+func Get() *Tags {
+	once.Do(func() {
+		singleton = &Tags{
+			tags: make(map[string]tags),
+		}
+	})
+
+	return singleton
 }
 
 func (t *Tags) Clear() {
 	t.tags = make(map[string]tags)
 }
 
+// TODO Rename this
 func (t *Tags) Update(filename string, tags []string) {
 	// Ignore adding tags.
 	if strings.HasPrefix(filename, "#") {

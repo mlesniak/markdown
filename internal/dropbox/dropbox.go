@@ -5,6 +5,8 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/mlesniak/markdown/internal/cache"
 	"github.com/mlesniak/markdown/internal/markdown"
+	"github.com/mlesniak/markdown/internal/tags"
+	"github.com/mlesniak/markdown/internal/utils"
 	"strings"
 )
 
@@ -68,17 +70,14 @@ func (s *Service) processQueueEntry(entry queueEntry) {
 // and updates the corresponding cache entry.
 // TODO Is this the right position?
 func (s *Service) convert(filename string, data []byte) []byte {
-	// Just to be sure we do not accidentally serve a non-public, but linked file.
 	if !isPublic(data) {
 		s.Log.Warnf("Preventing caching of non-public filename=%s", filename)
 		return nil
 	}
 
-	// Update tag list.
-	// tagList := utils.GetTags(data)
-	// tagsService.Update(filename, tagList)
+	tagList := utils.GetTags(data)
+	tags.Get().Update(filename, tagList)
 
-	// Render file.
 	s.Log.Infof("Converting markdown to HTML for filename=%s", filename)
 	html, _ := markdown.ToHTML(s.Log, data)
 

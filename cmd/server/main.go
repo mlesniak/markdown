@@ -28,7 +28,7 @@ func main() {
 	log := initializeLogger()
 
 	// TODO use proper singletons here instead of services?
-	tagsService := tags.New()
+	tagsService := tags.Get()
 	cacheService := cache.Get()
 	dropboxService := initializeDropboxStorage(log)
 	handlerService := handler.Handler{
@@ -68,13 +68,12 @@ func main() {
 	}))
 
 	dropboxService.Start()
-	// TODO Use recursive preload here
 	dropboxService.PreloadCache(rootFilename, "202009010533 About me.md")
-	// dropboxService.UpdateFile(rootFilename, "202009010533 About me.md")
 
 	// Start server.
 	e.HideBanner = true
 	e.HidePort = true
+	e.Logger.Info("Starting to listen for requests")
 	e.Logger.Fatal(e.Start(":8080"))
 }
 
