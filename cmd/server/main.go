@@ -12,23 +12,15 @@ import (
 	"os"
 )
 
-const (
-	// External mountable directory to publish files.
-	downloadRoot = "download/"
-
-	// Directory containing static files for website.
-	staticRoot = "static/"
-
-	rootFilename = "202009010520 index.md"
-)
-
 func main() {
+	const rootFilename = "202009010520 index.md"
+
 	log := initializeLogger()
 	dropboxService := initializeDropbox(log)
 
 	e := initializeEcho(log)
-	e.Static("/static", staticRoot)
-	e.Static("/download", downloadRoot)
+	e.Static("/static", "static/")
+	e.Static("/download", "download/")
 
 	e.GET("/", func(c echo.Context) error {
 		c.SetParamNames("name")
