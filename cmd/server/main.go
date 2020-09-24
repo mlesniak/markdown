@@ -33,9 +33,10 @@ func main() {
 	e.GET("/dropbox/webhook", dropboxService.HandleChallenge)
 	e.POST("/dropbox/webhook", dropboxService.WebhookHandler(func(log echo.Logger, filename string, data []byte) {
 		// TODO Remove pre-loading data, will be done in the queue.
+
 	}))
 
-	dropboxService.Start()
+	dropboxService.StartCacheQueue()
 	dropboxService.PreloadCache(rootFilename, "202009010533 About me.md")
 
 	e.Logger.Info("Starting to listen for requests")

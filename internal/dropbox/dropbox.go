@@ -45,7 +45,7 @@ func New(s Service) *Service {
 	return &s
 }
 
-func (s *Service) Start() {
+func (s *Service) StartCacheQueue() {
 	s.Log.Info("Starting update queue watching...")
 	go func() {
 		for {
