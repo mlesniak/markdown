@@ -141,6 +141,10 @@ func (s *Service) PreloadCache(filenames ...string) {
 			Data: []byte(html),
 		})
 	}
+
+	// TODO Add tag pages into cache
+	// Link to tag-<tag>
+	// Modify handler
 }
 
 func getLinks(data []byte) []string {
