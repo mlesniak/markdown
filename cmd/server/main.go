@@ -10,7 +10,6 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/ziflex/lecho/v2"
 	"os"
-	"time"
 )
 
 func main() {
@@ -32,14 +31,14 @@ func main() {
 
 	e.GET("/dropbox/webhook", dropboxService.HandleChallenge)
 
-	lastUpdate := time.Now()
+	// lastUpdate := time.Now()
 	e.POST("/dropbox/webhook", dropboxService.WebhookHandler(func() {
-		waitDuration := utils.MustParseDuration("1m")
-		if lastUpdate.Add(waitDuration).Before(time.Now()) {
-			log.Infof("Ignoring dropbox update call, since %v has not passed.", waitDuration)
-			return
-		}
-		lastUpdate = time.Now()
+		// waitDuration := utils.MustParseDuration("1m")
+		// if lastUpdate.Add(waitDuration).Before(time.Now()) {
+		// 	log.Infof("Ignoring dropbox update call, since %v has not passed.", waitDuration)
+		// 	return
+		// }
+		// lastUpdate = time.Now()
 
 		// We intentionally update the whole cache.
 		dropboxService.UpdateCache(rootFilename, "202009010533 About me.md")
