@@ -55,7 +55,7 @@ func ContentHandler(dropbox *dropbox.Service) echo.HandlerFunc {
 				})
 			}
 			return c.Blob(http.StatusOK, "image/png", bs)
-		case "md":
+		case "md", "":
 			// Markdown files are initially cached.
 			bs, inCache := useCache(log, filename)
 			if !inCache {

@@ -81,7 +81,7 @@ func (s *Service) loadFiles(filenames []string) map[string][]byte {
 
 func (s *Service) generateTagPages(tagMap map[string][]string) {
 	for tag, filenames := range tagMap {
-		tagName := "tag-" + tag[1:]
+		tagName := "tag-" + tag[1:] + ".md"
 		s.Log.Infof("Adding tag to cache. filename=%s", tagName)
 		bs := tags.GenerateTagPage(s.Log, tag, filenames)
 		cache.Get().AddEntry(cache.Entry{
