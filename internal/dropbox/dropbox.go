@@ -87,6 +87,12 @@ func (s *Service) generateTagPages(tagMap map[string][]string) {
 }
 
 func (s *Service) processFiles(fileBuffers map[string][]byte) map[string][]string {
+	for filename, bs := range fileBuffers {
+		bls := backlinks.GetLinks(bs)
+		backlinks.Get().AddChildren(filename, bls)
+		s.Log.Infof("Adding children. filename=%s, children=%v", filename, bls)
+	}
+
 	tagMap := make(map[string][]string)
 	for filename, bs := range fileBuffers {
 		ts := utils.GetTags(bs)
@@ -99,10 +105,6 @@ func (s *Service) processFiles(fileBuffers map[string][]byte) map[string][]strin
 				tagMap[t] = append(tagMap[t], filename)
 			}
 		}
-
-		bls := backlinks.GetLinks(bs)
-		backlinks.Get().AddChildren(filename, bls)
-		s.Log.Infof("Adding children. filename=%s, children=%v", filename, bls)
 
 		html, _ := markdown.ToHTML(s.Log, filename, bs)
 		s.Log.Infof("Adding cache entry. filename=%s", filename)
