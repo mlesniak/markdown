@@ -36,14 +36,16 @@ func main() {
 	update := false
 	e.POST("/dropbox/webhook", dropboxService.WebhookHandler(func() {
 		if timer == nil {
-			log.Info("Starting new timer")
+			baseDuration := "1m"
+			duration := utils.MustParseDuration(baseDuration)
+			log.Infof("Starting new timer. duration=%v", duration)
 			dropboxService.UpdateCache(rootFiles)
 
 			// Catch all intermediate requests from dropbox.
-			baseDuration := "1m"
-			timer := time.NewTimer(utils.MustParseDuration(baseDuration))
+			timer := time.NewTimer(duration)
 			go func() {
 				<-timer.C
+				log.Info("Timer finished")
 				if update {
 					dropboxService.UpdateCache(rootFiles)
 				}
@@ -51,6 +53,7 @@ func main() {
 				update = false
 			}()
 		} else {
+			log.Info("Remember to update cache after timer runs out")
 			update = true
 		}
 	}))
