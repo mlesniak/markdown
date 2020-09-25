@@ -45,7 +45,7 @@ func GenerateTagPage(log echo.Logger, tag string, filenames []string) []byte {
 	content := tags.String()
 
 	// Create dynamic markdown.
-	md := []byte(fmt.Sprintf("# Articles tagged %s\n\n%s", tag, content))
+	md := []byte(fmt.Sprintf("# Articles tagged %s\n\n%s", tag[1:], content))
 
 	html, _ := markdown.ToHTML(log, "", md)
 	html = strings.ReplaceAll(html, "{{title}}", tag)
