@@ -27,9 +27,9 @@ func main() {
 	e.GET("/", func(c echo.Context) error {
 		c.SetParamNames("name")
 		c.SetParamValues(rootFilename)
-		return handler.ContentHandler(c)
+		return handler.ContentHandler(dropboxService)(c)
 	})
-	e.GET("/:name", handler.ContentHandler)
+	e.GET("/:name", handler.ContentHandler(dropboxService))
 
 	// Prevent cache updates every time we change a file
 	var timer *time.Timer

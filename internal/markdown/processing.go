@@ -19,6 +19,21 @@ func processRawMarkdown(rawMarkdown []byte) string {
 	markdown := string(rawMarkdown)
 	markdown = convertTags(markdown)
 	markdown = convertWikiLinks(markdown)
+	markdown = convertImages(markdown)
+	return markdown
+}
+
+func convertImages(markdown string) string {
+	regex := regexp.MustCompile(`!\[\]\((.*?) (.*?)\)`)
+	submatches := regex.FindAllStringSubmatch(markdown, -1)
+	for _, matches := range submatches {
+		text := matches[0]
+		image := matches[1]
+		width := matches[2]
+		html := fmt.Sprintf(`<img src="%s" width="%s"/>`, image, width)
+		markdown = strings.ReplaceAll(markdown, text, html)
+	}
+
 	return markdown
 }
 
