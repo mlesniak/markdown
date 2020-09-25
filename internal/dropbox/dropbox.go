@@ -9,6 +9,7 @@ import (
 	"github.com/mlesniak/markdown/internal/tags"
 	"github.com/mlesniak/markdown/internal/utils"
 	"strings"
+	"time"
 )
 
 // Service contains the necessary data to access a dropbox.
@@ -35,9 +36,13 @@ func New(s Service) *Service {
 }
 
 func (s *Service) UpdateCache(filenames []string) {
+	now := time.Now()
+
 	fileBuffers := s.loadFiles(filenames)
 	tags := s.processFiles(fileBuffers)
 	s.generateTagPages(tags)
+
+	s.Log.Infof("Cache update took %dms", time.Now().Sub(now).Milliseconds())
 }
 
 func (s *Service) loadFiles(filenames []string) map[string][]byte {
