@@ -58,6 +58,7 @@ func convertWikiLinks(markdown string) string {
 		if !strings.Contains(fileLinkName, ".") {
 			fileLinkName = fileLinkName + ".md"
 		}
+		fileLinkName = strings.ReplaceAll(fileLinkName, " ", "-")
 		markdownLink := fmt.Sprintf(`[%s](/%s)`, displayedName, fileLinkName)
 		markdown = strings.ReplaceAll(markdown, wikiLink, markdownLink)
 	}
