@@ -36,7 +36,7 @@ func ContentHandler(c echo.Context) error {
 	}
 
 	// This can only happen if we are starting, since otherwise the cache is filled.
-	log.Warn("File not yet in cache: %s", filename)
+	log.Warnf("File not yet in cache: %s", filename)
 	return c.String(http.StatusNotFound, "File not found:"+filename)
 }
 
