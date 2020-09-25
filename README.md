@@ -5,29 +5,31 @@
 
 # Overview
 
-This is a custom hacked-together markdown-to-html server for [mlesniak.com](https://mlesniak.com) which uses dropbox to retrieve files to display, hence we can edit content in realtime using any tools we like. See [here](https://mlesniak.com/202009011431%20Missing%20Features) for implemented and planned features. 
+This is a custom from-dropbox-to-markdown-to-html-to-in-memory-cache server for my personal site [mlesniak.com](https://mlesniak.com). As stated,  uses dropbox to retrieve files to display so I can edit content in real-time using any tools I like on multiple platforms. 
 
-## Build and run locally
+I try to use a [Zettelkasten](http://localhost:8080/202009010824-Zettelkasten.md)-based system (with tags and backlinks) to structure my thoughts and notes and the personal site is the publicly available part of it, i.e. it shows all pages tagged `#public` which are reachable from the root page. In combination with [The Archive](https://zettelkasten.de/the-archive/) on the desktop and [iaWriter](https://ia.net/de/writer) on mobile this allows for a very pleasent, quick and efficient note-taking and throught-processing process. 
 
-    docker build -t server .
-    docker run --name markdown --rm -it -p 8080:8080 -v $(pwd)/data:/data server
+## Usage for anyone besides me
 
-## Push to server
+I belive this software can be setup and started by any competent software developer, although quite a bit of configuration and code is tailored to my specific needs and some paths are (still) hard-coded. If you want to deploy it yourself and struggle, simply drop me a [mail](mailto:mail@mlesniak.com) or contact me on [Twitter](https://twitter.com/mlesniak). 
 
-    docker tag server 116.203.24.33:5000/markdown:latest
-    docker push 116.203.24.33:5000/markdown:latest
+## Internal documentation
+
+The following information is primary useful to me and shows different configuration options and things I don't want to forget. 
 
 ## Run on server
+
+The following environment variables have to be set inside the container.
 
     # cat markdown.env
     TOKEN=<DROPBOX TOKEN>
     SECRET=<DROPBOX APP SECRET>
     LOGS_ENABLED=true
 
-    docker pull 116.203.24.33:5000/markdown:latest
-    docker run -d --name markdown --env-file markdown.env -it -p 8088:8080 -v $(pwd)/data:/data 116.203.24.33:5000/markdown:latest
-    
 ## Start logging daemon
+
+Logging is submitted to [sematext](https://sematext.com) using their logagent. The agent collects all JSON-based output of
+docker container which have `LOGS_ENABELED` set to `true`.
 
     docker run -d --name st-logagent --restart=always \
       -v /var/run/docker.sock:/var/run/docker.sock \
@@ -38,10 +40,11 @@ This is a custom hacked-together markdown-to-html server for [mlesniak.com](http
       
 ## Display log on terminal
 
-... and ignore server logs
+The following local command shows all json output from the server (but not the webserver logs):
 
     scripts/logs.sh|jq -r '(select(.message != null) | .time + "\t" + .message)'      
       
+A automatic-login ssh config for `server` has to be pre-configured.        
       
 ## License
 
