@@ -36,6 +36,7 @@ func main() {
 	update := false
 	e.POST("/dropbox/webhook", dropboxService.WebhookHandler(func() {
 		if timer == nil {
+			log.Info("Starting new timer")
 			dropboxService.UpdateCache(rootFiles)
 
 			// Catch all intermediate requests from dropbox.

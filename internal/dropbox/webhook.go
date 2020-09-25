@@ -60,6 +60,7 @@ func (s *Service) WebhookHandler(updater Updater) echo.HandlerFunc {
 				}
 				var es entries
 				json.Unmarshal(bs, &es)
+				updater()
 				s.cursor = es.Cursor
 			}()
 		} else {
