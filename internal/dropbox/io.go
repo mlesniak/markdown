@@ -1,6 +1,8 @@
 package dropbox
 
 import (
+	"io/ioutil"
+	"os"
 	"time"
 )
 
@@ -12,6 +14,13 @@ import (
 // zerolog, but this is a lot of work for this small program, hence 🤷‍.
 // Although I miss zerlog's context, e.g. for filenames.
 func (s *Service) Read(filename string) ([]byte, error) {
+	// Ugly hack for local development.
+	if local := os.Getenv("LOCAL"); local != "" {
+		path := os.Getenv("HOME") + "/Dropbox/" + s.RootDirectory + "/" + filename
+		s.Log.Infof("Reading from local storage: %s -> %s", filename, path)
+		return ioutil.ReadFile(path)
+	}
+
 	start := time.Now()
 
 	argument := struct {

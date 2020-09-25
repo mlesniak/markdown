@@ -88,11 +88,18 @@ func serveStaticFile(c echo.Context, filename string) bool {
 }
 
 // useCache tries to use the cache entry to serve a precomputed and stored file.
-// TODO Remove this?
 func useCache(log echo.Logger, filename string) ([]byte, bool) {
 	entry, ok := cache.Get().GetEntry(filename)
 	if ok {
 		log.Infof("Using cache. filename=%s", filename)
+		return entry, true
+	}
+
+	// Try to replace all - with spaces.
+	spaceFilename := strings.ReplaceAll(filename, "-", " ")
+	entry, ok = cache.Get().GetEntry(spaceFilename)
+	if ok {
+		log.Infof("Using cache (after replacing -s). filename=%s, retrievedFilename=%s", filename, spaceFilename)
 		return entry, true
 	}
 
