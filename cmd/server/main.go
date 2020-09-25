@@ -68,11 +68,15 @@ func main() {
 
 func initializeEcho(log *lecho.Logger) *echo.Echo {
 	e := echo.New()
+	e.Use(middleware.RecoverWithConfig(middleware.RecoverConfig{
+		DisableStackAll: false,
+	}))
 	e.Use(handler.BuildVersionHeader())
 	e.Use(middleware.RequestID())
 	e.Use(lecho.Middleware(lecho.Config{
 		Logger: log,
 	}))
+
 	e.HideBanner = true
 	e.HidePort = true
 	e.Logger = log
