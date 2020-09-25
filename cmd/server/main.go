@@ -42,7 +42,7 @@ func main() {
 			dropboxService.UpdateCache(rootFiles)
 
 			// Catch all intermediate requests from dropbox.
-			timer := time.NewTimer(duration)
+			timer = time.NewTimer(duration)
 			go func() {
 				<-timer.C
 				log.Info("Timer finished")
