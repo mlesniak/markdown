@@ -9,6 +9,8 @@ This is a custom from-dropbox-to-markdown-to-html-to-in-memory-cache server for 
 
 I try to use a [Zettelkasten](http://localhost:8080/202009010824-Zettelkasten.md)-based system (with tags and backlinks) to structure my thoughts and notes and the personal site is the publicly available part of it, i.e. it shows all pages tagged `#public` which are reachable from the root page. In combination with [The Archive](https://zettelkasten.de/the-archive/) on the desktop and [iaWriter](https://ia.net/de/writer) on mobile this allows for a very pleasent, quick and efficient note-taking and throught-processing process. 
 
+Side remark: I should probably rewrite it to be simpler: Initially, the design was more complicated, dynamic generation of pages and without caching and the directory and package structure still shows it.   
+
 ## Usage for anyone besides me
 
 I belive this software can be setup and started by any competent software developer, although quite a bit of configuration and code is tailored to my specific needs and some paths are (still) hard-coded. If you want to deploy it yourself and struggle, simply drop me a [mail](mailto:mail@mlesniak.com) or contact me on [Twitter](https://twitter.com/mlesniak). 
